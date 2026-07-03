@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SalesLens — FP&A External Systems</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f4f4;--surface:#ffffff;--border:#e0e0e0;--border2:#c6c6c6;
+  --text:#161616;--muted:#525252;--dim:#8d8d8d;
+  --blue:#0f62fe;--blue-h:#0353e9;--blue-lt:#edf4ff;
+  --green:#198038;--green-lt:#defbe6;
+  --red:#da1e28;--red-lt:#fff1f1;
+  --yellow:#f1c21b;--yellow-lt:#fdf6dd;
+  --orange:#ff832b;--orange-lt:#fff2e8;
+  --purple:#6929c4;--purple-lt:#f6f2ff;
+  --teal:#007d79;--teal-lt:#d9fbfb;
+  --ink:#14181c;--r:6px;
+  --font:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+}
+body{font-family:var(--font);font-size:14px;background:var(--bg);color:var(--text);line-height:1.5}
+
+/* ── TOPBAR ── */
+.topbar{height:48px;background:#161616;display:flex;align-items:center;padding:0 20px;gap:12px;position:sticky;top:0;z-index:200}
+.logo{color:#fff;font-size:16px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
+.logo em{color:#78a9ff;font-style:normal}
+.topbar-pill{background:#393939;color:#c6c6c6;font-size:11px;font-family:var(--mono);padding:2px 10px;border-radius:12px;white-space:nowrap}
+.topbar-links{margin-left:auto;display:flex;gap:16px;align-items:center}
+.topbar-links a{color:#78a9ff;font-size:12px;text-decoration:none;font-family:var(--mono)}
+.topbar-links a:hover{text-decoration:underline}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:#525252;flex-shrink:0;transition:background .3s}
+.conn-dot.live{background:#42be65}
+.conn-dot.down{background:#fa4d56}
+.conn-status-lbl{font-size:12px;color:#8d8d8d;font-family:var(--mono)}
+
+/* ── LAYOUT ── */
+.layout{display:flex;min-height:calc(100vh - 48px)}
+
+/* ── SIDEBAR ── */
+.sidebar{width:232px;background:#1c1c1c;flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:48px;height:calc(100vh - 48px);overflow-y:auto}
+.sidebar-nav{flex:1;padding:8px 0}
+.sidebar-group{padding:16px 16px 4px;font-size:10px;color:#6f6f6f;text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;color:#c6c6c6;font-size:13.5px;border-left:3px solid transparent;user-select:none;transition:background .1s,color .1s}
+.nav-item:hover{background:#2a2a2a;color:#fff}
+.nav-item.active{background:#262626;color:#78a9ff;border-left-color:#78a9ff;font-weight:500}
+.nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:#da1e28;color:#fff;font-size:10px;font-family:var(--mono);padding:1px 6px;border-radius:10px;display:none}
+.nav-badge.show{display:inline-block}
+
+/* ── CONN PANEL ── */
+.conn-panel{border-top:1px solid #2d2d2d;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.conn-panel-label{font-size:10px;color:#6f6f6f;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.conn-field{display:flex;flex-direction:column;gap:3px}
+.conn-field label{font-size:10px;color:#8d8d8d}
+.conn-field input{background:#2a2a2a;border:1px solid #3d3d3d;border-radius:4px;color:#f4f4f4;padding:6px 8px;font-family:var(--mono);font-size:11.5px;width:100%}
+.conn-field input:focus{outline:1px solid #4589ff;border-color:transparent}
+.conn-field input::placeholder{color:#525252}
+.btn-conn{background:#262626;border:1px solid #4589ff;color:#78a9ff;border-radius:4px;padding:7px 10px;font-size:12px;cursor:pointer;font-family:var(--font);text-align:center;width:100%}
+.btn-conn:hover{background:#4589ff;color:#fff}
+.conn-row-status{display:flex;align-items:center;gap:6px;margin-top:2px}
+
+/* ── MAIN ── */
+.main{flex:1;overflow:auto;min-width:0}
+.page{display:none;padding:28px 32px;max-width:1360px}
+.page.active{display:block}
+
+/* ── PAGE HEADER ── */
+.page-hdr{margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.page-hdr-left{}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:3px}
+.page-sub{color:var(--muted);font-size:13px;font-family:var(--mono)}
+
+/* ── STAT GRID ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 16px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--stat-accent,var(--border))}
+.stat-card.blue{--stat-accent:var(--blue)}.stat-card.green{--stat-accent:var(--green)}.stat-card.red{--stat-accent:var(--red)}.stat-card.orange{--stat-accent:var(--orange)}.stat-card.purple{--stat-accent:var(--purple)}.stat-card.teal{--stat-accent:var(--teal)}
+.stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;font-weight:600}
+.stat-val{font-size:26px;font-weight:700;font-family:var(--mono);line-height:1;margin-bottom:4px}
+.stat-val.blue{color:var(--blue)}.stat-val.green{color:var(--green)}.stat-val.red{color:var(--red)}.stat-val.orange{color:var(--orange)}.stat-val.purple{color:var(--purple)}.stat-val.teal{color:var(--teal)}
+.stat-hint{font-size:11px;color:var(--dim)}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.toolbar input,.toolbar select{height:36px;padding:0 10px;border:1px solid var(--border2);border-radius:var(--r);font-size:13px;font-family:var(--font);background:#fff;color:var(--text);min-width:130px}
+.toolbar input:focus,.toolbar select:focus{outline:2px solid var(--blue);outline-offset:0;border-color:transparent}
+.tb-spacer{flex:1}
+.toolbar-hint{font-size:12px;color:var(--dim);font-family:var(--mono)}
+
+/* ── BUTTONS ── */
+.btn{height:36px;padding:0 16px;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:var(--font);transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-secondary{background:#fff;color:var(--text);border:1px solid var(--border2)}
+.btn-danger{background:#fff;color:var(--red);border:1px solid #ffd7d9}
+.btn-ghost{background:transparent;color:var(--blue);border:none;padding:0 8px}
+.btn-sm{height:28px;padding:0 10px;font-size:12px}
+.btn-icon{width:32px;height:32px;padding:0;justify-content:center}
+
+/* ── TABLE ── */
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+table{width:100%;border-collapse:collapse}
+thead th{background:#f4f4f4;padding:10px 14px;text-align:left;font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#f9f9f9}
+td{padding:10px 14px;font-size:13px;vertical-align:middle}
+td.mono{font-family:var(--mono);font-size:12px}
+td.num{font-family:var(--mono);font-size:13px}
+td.act{white-space:nowrap;text-align:right}
+
+/* ── BADGES ── */
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap;font-family:var(--mono)}
+.b-green{background:var(--green-lt);color:var(--green)}
+.b-red{background:var(--red-lt);color:var(--red)}
+.b-yellow{background:var(--yellow-lt);color:#7a5000}
+.b-orange{background:var(--orange-lt);color:#8a3800}
+.b-blue{background:var(--blue-lt);color:var(--blue)}
+.b-purple{background:var(--purple-lt);color:var(--purple)}
+.b-teal{background:var(--teal-lt);color:var(--teal)}
+.b-grey{background:#e8e8e8;color:var(--muted)}
+.m-get{background:#edf4ff;color:#0f62fe}
+.m-post{background:#defbe6;color:#198038}
+.m-put{background:#fdf6dd;color:#7a5000}
+.m-delete{background:#fff1f1;color:#da1e28}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px}
+.card-title{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title .ct-icon{font-size:16px}
+
+/* ── CONTEXT CARDS (Variance Lookup) ── */
+.context-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.ctx-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;border-left:4px solid var(--border)}
+.ctx-card.teal{border-left-color:var(--teal)}
+.ctx-card.amber{border-left-color:var(--orange)}
+.ctx-tag{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:block}
+.ctx-card.teal .ctx-tag{color:var(--teal)}
+.ctx-card.amber .ctx-tag{color:var(--orange)}
+.ctx-summary{font-size:14px;line-height:1.7;margin:0 0 14px;color:var(--text)}
+.ctx-summary.empty{color:var(--dim);font-size:13px;font-style:italic}
+.ctx-figures{display:flex;gap:24px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px}
+.ctx-figure{}
+.ctx-figure-label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;font-family:var(--mono)}
+.ctx-figure-value{font-size:18px;font-weight:700;font-family:var(--mono)}
+.ctx-figure-value.pos{color:var(--green)}
+.ctx-figure-value.neg{color:var(--red)}
+
+/* ── LOOKUP FORM ── */
+.lookup-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:22px}
+.lookup-form-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:14px;align-items:end}
+.lf-field{display:flex;flex-direction:column;gap:5px}
+.lf-field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.lf-field .opt{font-weight:400;color:var(--dim);text-transform:none}
+.lf-field input,.lf-field select{height:38px;padding:0 10px;border:1px solid var(--border2);border-radius:var(--r);font-size:13px;font-family:var(--mono);background:#fff;color:var(--text)}
+.lf-field input:focus,.lf-field select:focus{outline:2px solid var(--blue);outline-offset:0;border-color:transparent}
+.btn-fetch{height:38px;padding:0 20px;background:var(--ink);color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap}
+.btn-fetch:hover{background:#2b3138}
+
+/* ── PROGRESS BAR ── */
+.pbar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;flex:1;min-width:60px}
+.pbar-fill{height:100%;border-radius:3px;transition:width .4s ease}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--r);width:640px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(0,0,0,.25)}
+.modal-hdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.modal-body{padding:22px;overflow-y:auto;flex:1}
+.modal-ftr{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:#fafafa;border-radius:0 0 var(--r) var(--r)}
+.xbtn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--dim);line-height:1;padding:2px 6px;border-radius:4px}
+.xbtn:hover{background:var(--bg);color:var(--text)}
+
+/* ── FORM GRID ── */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg.span2{grid-column:1/-1}
+.fg label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.fg input,.fg select,.fg textarea{padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);font-size:13px;font-family:var(--font);background:#fff;color:var(--text)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:2px solid var(--blue);outline-offset:0;border-color:transparent}
+.fg textarea{resize:vertical;min-height:72px}
+
+/* ── TOAST ── */
+#toast-box{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:#161616;color:#fff;padding:11px 16px;border-radius:var(--r);font-size:13px;min-width:250px;display:flex;align-items:center;gap:10px;pointer-events:auto;animation:fadeup .22s ease}
+.toast-icon{font-size:15px;flex-shrink:0}
+@keyframes fadeup{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:56px 24px;color:var(--dim)}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:.5}
+.empty-msg{font-size:14px}
+
+/* ── CHART BARS ── */
+.chart-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.chart-label{width:100px;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.chart-label.wide{width:140px}
+.chart-val{width:52px;font-size:12px;font-weight:700;font-family:var(--mono);text-align:right;flex-shrink:0}
+
+/* ── DIVIDER ── */
+.divider{height:1px;background:var(--border);margin:20px 0}
+
+/* ── HINT ── */
+.hint{font-size:12.5px;color:var(--muted);font-family:var(--mono);line-height:1.6}
+
+/* ── LOADING SPINNER ── */
+.loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;padding:16px 0}
+.spin{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ TOPBAR ════════════════ -->
+<div class="topbar">
+  <span class="logo">Sales<em>Lens</em></span>
+  <span class="topbar-pill">FP&amp;A External Systems v1.0</span>
+  <div class="topbar-links">
+    <span class="conn-dot" id="topDot"></span>
+    <span class="conn-status-lbl" id="topConnLbl">Not connected</span>
+    <a href="/docs/" target="_blank">API Docs</a>
+    <a href="/api-spec" target="_blank">OpenAPI</a>
+    <a href="/health" target="_blank">Health</a>
+  </div>
+</div>
+
+<!-- ════════════════ LAYOUT ════════════════ -->
+<div class="layout">
+
+  <!-- ── SIDEBAR ── -->
+  <nav class="sidebar">
+    <div class="sidebar-nav">
+      <div class="sidebar-group">Overview</div>
+      <div class="nav-item active" data-page="lookup"><span class="nav-icon">🔍</span>Variance Lookup</div>
+      <div class="nav-item" data-page="dashboard"><span class="nav-icon">📊</span>Dashboard</div>
+
+      <div class="sidebar-group">CRM</div>
+      <div class="nav-item" data-page="deals"><span class="nav-icon">💼</span>Deals<span class="nav-badge" id="cnt-deals"></span></div>
+      <div class="nav-item" data-page="pipeline"><span class="nav-icon">📈</span>Pipeline</div>
+
+      <div class="sidebar-group">ERP</div>
+      <div class="nav-item" data-page="pos"><span class="nav-icon">🧾</span>Purchase Orders<span class="nav-badge" id="cnt-pos"></span></div>
+      <div class="nav-item" data-page="headcount"><span class="nav-icon">👥</span>Headcount</div>
+
+      <div class="sidebar-group">System</div>
+      <div class="nav-item" data-page="apilog"><span class="nav-icon">📡</span>API Log</div>
+    </div>
+
+    <!-- Connection panel -->
+    <div class="conn-panel">
+      <div class="conn-panel-label">API Connection</div>
+      <div class="conn-field">
+        <label>Base URL</label>
+        <input id="inp-base" type="text" placeholder="http://localhost:8080" autocomplete="off">
+      </div>
+      <div class="conn-field">
+        <label>API Key</label>
+        <input id="inp-key" type="password" placeholder="workshop-demo-key" autocomplete="off">
+      </div>
+      <button class="btn-conn" id="btn-connect">Save &amp; check health</button>
+      <div class="conn-row-status">
+        <span class="conn-dot" id="sidebarDot"></span>
+        <span class="conn-status-lbl" id="sidebarConnLbl">Not connected</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── MAIN ── -->
+  <div class="main">
+
+    <!-- ════ VARIANCE LOOKUP (hero) ════ -->
+    <div class="page active" id="page-lookup">
+      <div class="page-hdr">
+        <div class="page-hdr-left">
+          <div class="page-title">Variance Lookup</div>
+          <div class="page-sub">The exact root-cause context the Orchestrate agent receives — revenue + cost in one view</div>
+        </div>
+      </div>
+
+      <div class="lookup-form">
+        <div class="lookup-form-grid">
+          <div class="lf-field">
+            <label>Department ID</label>
+            <input id="lk-dept" type="text" placeholder="DEPT-NA-SALES">
+          </div>
+          <div class="lf-field">
+            <label>Period</label>
+            <input id="lk-period" type="text" placeholder="2024-01">
+          </div>
+          <div class="lf-field">
+            <label>Account ID <span class="opt">(optional)</span></label>
+            <input id="lk-acct" type="text" placeholder="REV-001">
+          </div>
+          <button class="btn-fetch" id="btn-lk-fetch">Fetch context</button>
+        </div>
+        <div style="margin-top:12px">
+          <p class="hint">Try: <strong>DEPT-NA-SALES / 2024-01</strong> &nbsp;·&nbsp; <strong>DEPT-EMEA-SALES / 2024-02</strong> &nbsp;·&nbsp; <strong>DEPT-APAC-SALES / 2024-03</strong></p>
+        </div>
+      </div>
+
+      <div id="lk-spinner" style="display:none"><div class="loading"><div class="spin"></div>Fetching CRM + ERP context…</div></div>
+
+      <div id="lk-results" style="display:none">
+        <div class="context-grid">
+          <div class="ctx-card teal">
+            <span class="ctx-tag">Revenue context · CRM</span>
+            <p class="ctx-summary" id="crm-summary"></p>
+            <div class="ctx-figures" id="crm-figures"></div>
+          </div>
+          <div class="ctx-card amber">
+            <span class="ctx-tag">Cost context · ERP</span>
+            <p class="ctx-summary" id="erp-summary"></p>
+            <div class="ctx-figures" id="erp-figures"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="ct-icon">📋</span>Raw agent context strings</div>
+          <div style="margin-bottom:10px">
+            <div style="font-size:10.5px;color:var(--teal);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">CRM → crm/variance-context · context_summary</div>
+            <div id="crm-raw" style="background:#f4f4f4;border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--text);white-space:pre-wrap"></div>
+          </div>
+          <div>
+            <div style="font-size:10.5px;color:var(--orange);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">ERP → erp/cost-context · context_summary</div>
+            <div id="erp-raw" style="background:#f4f4f4;border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--text);white-space:pre-wrap"></div>
+          </div>
+        </div>
+
+        <div id="lk-deals-wrap" style="display:none">
+          <div class="card">
+            <div class="card-title"><span class="ct-icon">💼</span>Slipped deals in this variance</div>
+            <div class="tbl-wrap" style="margin-bottom:0">
+              <table>
+                <thead><tr><th>Deal ID</th><th>Account</th><th>ARR</th><th>Reason</th><th>Rescheduled</th></tr></thead>
+                <tbody id="lk-deals-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="lk-pos-wrap" style="display:none">
+          <div class="card">
+            <div class="card-title"><span class="ct-icon">🧾</span>Unbudgeted POs in this variance</div>
+            <div class="tbl-wrap" style="margin-bottom:0">
+              <table>
+                <thead><tr><th>PO ID</th><th>Vendor</th><th>Category</th><th>Amount</th><th>Reason</th></tr></thead>
+                <tbody id="lk-pos-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ DASHBOARD ════ -->
+    <div class="page" id="page-dashboard">
+      <div class="page-hdr">
+        <div class="page-hdr-left">
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">CRM + ERP live overview · in-memory data resets on server restart</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-dash-refresh">↺ Refresh</button>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card blue"><div class="stat-lbl">Total Deals</div><div class="stat-val blue" id="d-deals">—</div><div class="stat-hint">in pipeline</div></div>
+        <div class="stat-card blue"><div class="stat-lbl">Pipeline Value</div><div class="stat-val blue" id="d-pipeline">—</div><div class="stat-hint">total ARR</div></div>
+        <div class="stat-card red"><div class="stat-lbl">Slipped Deals</div><div class="stat-val red" id="d-slipped">—</div><div class="stat-hint">revenue at risk</div></div>
+        <div class="stat-card orange"><div class="stat-lbl">Purchase Orders</div><div class="stat-val orange" id="d-pos">—</div><div class="stat-hint">total ERP POs</div></div>
+        <div class="stat-card red"><div class="stat-lbl">Unbudgeted POs</div><div class="stat-val red" id="d-unbudgeted">—</div><div class="stat-hint">not in plan</div></div>
+        <div class="stat-card purple"><div class="stat-lbl">Headcount Events</div><div class="stat-val purple" id="d-hc">—</div><div class="stat-hint">hires &amp; contractors</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="card">
+          <div class="card-title"><span class="ct-icon">💼</span>Deals by Status</div>
+          <div id="chart-status"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="ct-icon">🏢</span>ERP Spend by Department</div>
+          <div id="chart-dept"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">⚠️</span>At-Risk &amp; Slipped Deals</div>
+        <div id="dash-risk"></div>
+      </div>
+    </div>
+
+    <!-- ════ DEALS ════ -->
+    <div class="page" id="page-deals">
+      <div class="page-hdr">
+        <div class="page-hdr-left">
+          <div class="page-title">CRM — Deals</div>
+          <div class="page-sub">GET /crm/deals · POST · PUT · DELETE</div>
+        </div>
+        <button class="btn btn-primary" id="btn-new-deal">＋ New Deal</button>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="deal-q" placeholder="Search account, reason…" style="min-width:200px">
+        <select id="deal-dept">
+          <option value="">All Departments</option>
+          <option>DEPT-NA-SALES</option><option>DEPT-EMEA-SALES</option><option>DEPT-APAC-SALES</option><option>DEPT-LATAM-SALES</option>
+        </select>
+        <select id="deal-status">
+          <option value="">All Statuses</option>
+          <option>open</option><option>slipped</option><option>at_risk</option><option>closed</option><option>early_close</option>
+        </select>
+        <input id="deal-period" placeholder="Period (2024-01)" style="width:150px">
+        <button class="btn btn-secondary" id="btn-deal-filter">Filter</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Deal ID</th><th>Account</th><th>Region</th><th>Department</th><th>Stage</th><th>ARR</th><th>Status</th><th>Period</th><th>Prob%</th><th>Actions</th></tr></thead>
+          <tbody id="deals-body"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="deals-empty" style="display:none"><div class="empty-icon">💼</div><div class="empty-msg">No deals match your filters</div></div>
+    </div>
+
+    <!-- ════ PIPELINE ════ -->
+    <div class="page" id="page-pipeline">
+      <div class="page-hdr">
+        <div class="page-hdr-left">
+          <div class="page-title">CRM — Pipeline Summary</div>
+          <div class="page-sub">GET /crm/pipeline-summary · coverage ratios by dept &amp; period</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <select id="pipe-dept">
+          <option value="">Select Department…</option>
+          <option>DEPT-NA-SALES</option><option>DEPT-EMEA-SALES</option><option>DEPT-APAC-SALES</option><option>DEPT-LATAM-SALES</option>
+        </select>
+        <input id="pipe-period" placeholder="Period (2024-01)" style="width:150px">
+        <button class="btn btn-primary" id="btn-pipe-fetch">Get Summary</button>
+      </div>
+      <div id="pipe-result">
+        <div class="empty"><div class="empty-icon">📈</div><div class="empty-msg">Select a department and period to load pipeline data</div></div>
+      </div>
+    </div>
+
+    <!-- ════ PURCHASE ORDERS ════ -->
+    <div class="page" id="page-pos">
+      <div class="page-hdr">
+        <div class="page-hdr-left">
+          <div class="page-title">ERP — Purchase Orders</div>
+          <div class="page-sub">GET /erp/purchase-orders · POST · PUT · DELETE</div>
+        </div>
+        <button class="btn btn-primary" id="btn-new-po">＋ New PO</button>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="po-q" placeholder="Search vendor, notes…" style="min-width:200px">
+        <select id="po-dept">
+          <option value="">All Departments</option>
+          <option>DEPT-NA-SALES</option><option>DEPT-EMEA-SALES</option><option>DEPT-APAC-SALES</option><option>DEPT-LATAM-SALES</option>
+          <option>DEPT-PROD-ENG</option><option>DEPT-CLOUD-OPS</option><option>DEPT-PROF-SVC</option><option>DEPT-CUST-SUC</option>
+          <option>DEPT-MARKETING</option><option>DEPT-FINANCE</option><option>DEPT-HR</option><option>DEPT-IT</option>
+        </select>
+        <select id="po-appr"><option value="">All Statuses</option><option>approved</option><option>pending</option><option>rejected</option></select>
+        <select id="po-budg"><option value="">Budgeted?</option><option value="false">Unbudgeted only</option><option value="true">Budgeted only</option></select>
+        <button class="btn btn-secondary" id="btn-po-filter">Filter</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>PO ID</th><th>Department</th><th>Vendor</th><th>Category</th><th>Amount</th><th>Period</th><th>Budgeted</th><th>Status</th><th>Approver</th><th>Actions</th></tr></thead>
+          <tbody id="pos-body"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="pos-empty" style="display:none"><div class="empty-icon">🧾</div><div class="empty-msg">No purchase orders match your filters</div></div>
+    </div>
+
+    <!-- ════ HEADCOUNT ════ -->
+    <div class="page" id="page-headcount">
+      <div class="page-hdr">
+        <div class="page-hdr-left">
+          <div class="page-title">ERP — Headcount Events</div>
+          <div class="page-sub">GET /erp/headcount-events · POST · PUT · DELETE</div>
+        </div>
+        <button class="btn btn-primary" id="btn-new-hc">＋ New Event</button>
+      </div>
+      <div class="toolbar">
+        <select id="hc-dept">
+          <option value="">All Departments</option>
+          <option>DEPT-NA-SALES</option><option>DEPT-EMEA-SALES</option><option>DEPT-APAC-SALES</option><option>DEPT-LATAM-SALES</option>
+          <option>DEPT-PROD-ENG</option><option>DEPT-CLOUD-OPS</option><option>DEPT-PROF-SVC</option><option>DEPT-CUST-SUC</option>
+          <option>DEPT-MARKETING</option><option>DEPT-FINANCE</option><option>DEPT-HR</option><option>DEPT-IT</option>
+        </select>
+        <select id="hc-type"><option value="">All Types</option><option>new_hire</option><option>contractor</option></select>
+        <select id="hc-budg"><option value="">All</option><option value="false">Unbudgeted</option><option value="true">Budgeted</option></select>
+        <button class="btn btn-secondary" id="btn-hc-filter">Filter</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Event ID</th><th>Department</th><th>Type</th><th>Role</th><th>Monthly Cost</th><th>First Impact</th><th>Budgeted</th><th>Notes</th><th>Actions</th></tr></thead>
+          <tbody id="hc-body"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="hc-empty" style="display:none"><div class="empty-icon">👥</div><div class="empty-msg">No headcount events found</div></div>
+    </div>
+
+    <!-- ════ API LOG ════ -->
+    <div class="page" id="page-apilog">
+      <div class="page-hdr">
+        <div class="page-hdr-left">
+          <div class="page-title">API Call Log</div>
+          <div class="page-sub">Every request made by this UI in the current session</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-clear-log">Clear log</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Time</th><th>Method</th><th>Endpoint</th><th>Status</th><th>ms</th></tr></thead>
+          <tbody id="log-body"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="log-empty"><div class="empty-icon">📡</div><div class="empty-msg">No API calls yet this session</div></div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- ════ DEAL MODAL ════ -->
+<div class="overlay" id="modal-deal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title" id="modal-deal-title">New Deal</span><button class="xbtn" data-close="modal-deal">✕</button></div>
+    <div class="modal-body">
+      <div class="fgrid">
+        <div class="fg"><label>Account Name *</label><input id="d-account_name" placeholder="e.g. Acme Corp"></div>
+        <div class="fg"><label>Account Region</label><input id="d-account_region" placeholder="e.g. North America"></div>
+        <div class="fg"><label>Department *</label>
+          <select id="d-dept_id"><option>DEPT-NA-SALES</option><option>DEPT-EMEA-SALES</option><option>DEPT-APAC-SALES</option><option>DEPT-LATAM-SALES</option></select>
+        </div>
+        <div class="fg"><label>Owner</label><input id="d-owner" placeholder="e.g. Sarah Johnson"></div>
+        <div class="fg"><label>Stage</label>
+          <select id="d-stage"><option>Prospecting</option><option>Discovery</option><option>Proposal Sent</option><option>Negotiation</option><option>Contract Review</option><option>Closed Won</option><option>Closed Lost</option></select>
+        </div>
+        <div class="fg"><label>Status</label>
+          <select id="d-status"><option>open</option><option>slipped</option><option>at_risk</option><option>closed</option><option>early_close</option></select>
+        </div>
+        <div class="fg"><label>ARR Value ($) *</label><input type="number" id="d-arr_value" placeholder="120000"></div>
+        <div class="fg"><label>Probability %</label><input type="number" id="d-probability" placeholder="75" min="0" max="100"></div>
+        <div class="fg"><label>Scheduled Close</label><input type="date" id="d-scheduled_close"></div>
+        <div class="fg"><label>Period Impacted</label><input id="d-period_impacted" placeholder="2024-01"></div>
+        <div class="fg"><label>Account ID</label>
+          <select id="d-account_id"><option>REV-001</option><option>REV-002</option><option>REV-003</option><option>REV-004</option></select>
+        </div>
+        <div class="fg"><label>Classification</label>
+          <select id="d-classification"><option>on_track</option><option>timing</option><option>favorable</option><option>market_conditions</option><option>external_regulatory</option></select>
+        </div>
+        <div class="fg span2"><label>Slip Reason</label><textarea id="d-slip_reason" placeholder="Why did the deal slip?"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" data-close="modal-deal">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-deal">Save Deal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ PO MODAL ════ -->
+<div class="overlay" id="modal-po">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title" id="modal-po-title">New Purchase Order</span><button class="xbtn" data-close="modal-po">✕</button></div>
+    <div class="modal-body">
+      <div class="fgrid">
+        <div class="fg"><label>Department *</label>
+          <select id="p-dept_id"><option>DEPT-NA-SALES</option><option>DEPT-EMEA-SALES</option><option>DEPT-APAC-SALES</option><option>DEPT-LATAM-SALES</option><option>DEPT-PROD-ENG</option><option>DEPT-CLOUD-OPS</option><option>DEPT-PROF-SVC</option><option>DEPT-CUST-SUC</option><option>DEPT-MARKETING</option><option>DEPT-FINANCE</option><option>DEPT-HR</option><option>DEPT-IT</option></select>
+        </div>
+        <div class="fg"><label>Vendor *</label><input id="p-vendor" placeholder="e.g. AWS"></div>
+        <div class="fg"><label>Category</label><input id="p-category" placeholder="e.g. Cloud Infrastructure"></div>
+        <div class="fg"><label>Account ID</label>
+          <select id="p-account_id"><option>OPEX-001</option><option>OPEX-002</option><option>OPEX-003</option><option>OPEX-004</option><option>OPEX-005</option><option>OPEX-006</option><option>OPEX-007</option><option>OPEX-008</option><option>COGS-001</option><option>COGS-002</option></select>
+        </div>
+        <div class="fg"><label>Amount ($) *</label><input type="number" id="p-amount" placeholder="15000"></div>
+        <div class="fg"><label>Period</label><input id="p-period" placeholder="2024-01"></div>
+        <div class="fg"><label>PO Date</label><input type="date" id="p-po_date"></div>
+        <div class="fg"><label>Approval Status</label>
+          <select id="p-approval_status"><option>pending</option><option>approved</option><option>rejected</option></select>
+        </div>
+        <div class="fg"><label>Approver</label><input id="p-approver" placeholder="e.g. CFO"></div>
+        <div class="fg"><label>Budgeted?</label>
+          <select id="p-is_budgeted"><option value="false">No — Unbudgeted</option><option value="true">Yes — Budgeted</option></select>
+        </div>
+        <div class="fg span2"><label>Notes</label><textarea id="p-notes" placeholder="Context and justification…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" data-close="modal-po">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-po">Save PO</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ HC MODAL ════ -->
+<div class="overlay" id="modal-hc">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title" id="modal-hc-title">New Headcount Event</span><button class="xbtn" data-close="modal-hc">✕</button></div>
+    <div class="modal-body">
+      <div class="fgrid">
+        <div class="fg"><label>Department *</label>
+          <select id="h-dept_id"><option>DEPT-NA-SALES</option><option>DEPT-EMEA-SALES</option><option>DEPT-APAC-SALES</option><option>DEPT-LATAM-SALES</option><option>DEPT-PROD-ENG</option><option>DEPT-CLOUD-OPS</option><option>DEPT-PROF-SVC</option><option>DEPT-CUST-SUC</option><option>DEPT-MARKETING</option><option>DEPT-FINANCE</option><option>DEPT-HR</option><option>DEPT-IT</option></select>
+        </div>
+        <div class="fg"><label>Event Type</label>
+          <select id="h-event_type"><option>new_hire</option><option>contractor</option></select>
+        </div>
+        <div class="fg span2"><label>Role *</label><input id="h-role" placeholder="e.g. Senior Software Engineer"></div>
+        <div class="fg"><label>Monthly Cost ($) *</label><input type="number" id="h-monthly_cost" placeholder="12000"></div>
+        <div class="fg"><label>Effective Date</label><input type="date" id="h-effective_date"></div>
+        <div class="fg"><label>First Impact Period</label><input id="h-period_first_impact" placeholder="2024-02"></div>
+        <div class="fg"><label>Budgeted?</label>
+          <select id="h-budget_included"><option value="false">No — Unbudgeted</option><option value="true">Yes — Budgeted</option></select>
+        </div>
+        <div class="fg span2"><label>Notes</label><textarea id="h-notes" placeholder="Context and approval notes…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" data-close="modal-hc">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-hc">Save Event</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-box"></div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────────
+var state = {
+  base: localStorage.getItem('sl_base') || '',
+  key:  localStorage.getItem('sl_key')  || 'workshop-demo-key'
+};
+var DEALS = [], POS = [], HCS = [];
+var LOG = [];
+var editDealId = null, editPoId = null, editHcId = null;
+
+// ── DOM SHORTCUTS ─────────────────────────────────────────────────────────────
+function $$(id) { return document.getElementById(id); }
+function sel(id) { var el = $$(id); return el ? el.value : ''; }
+function setEl(id, v) { var el = $$(id); if (el) el.textContent = v; }
+function fmtD(n) { return '$' + (Number(n) || 0).toLocaleString('en-US'); }
+function fmtK(n) { var v = Number(n) || 0; return v >= 1000 ? '$' + (v/1000).toFixed(0) + 'K' : '$' + v; }
+
+// ── API HELPER ────────────────────────────────────────────────────────────────
+function resolveBase() {
+  return (state.base || window.location.origin).replace(/\/$/, '');
+}
+
+async function apiCall(method, path, body) {
+  var t = Date.now();
+  var url = resolveBase() + path;
+  var opts = {
+    method: method,
+    headers: { 'Content-Type': 'application/json', 'X-Api-Key': state.key }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  var r = await fetch(url, opts);
+  var ms = Date.now() - t;
+  var data = await r.json().catch(function() { return {}; });
+  addLog(method, path, r.status, ms);
+  if (!r.ok) throw new Error(data.error || data.message || 'Error ' + r.status);
+  return data;
+}
+
+async function apiGet(path, params) {
+  var qs = '';
+  if (params) {
+    var p = new URLSearchParams();
+    Object.keys(params).forEach(function(k) {
+      if (params[k] !== undefined && params[k] !== null && params[k] !== '') p.set(k, params[k]);
+    });
+    qs = p.toString() ? '?' + p.toString() : '';
+  }
+  return apiCall('GET', path + qs, null);
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function toast(msg, type) {
+  var icons = { ok: '✓', err: '✕', info: 'ℹ' };
+  type = type || 'ok';
+  var el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = '<span class="toast-icon">' + (icons[type] || '•') + '</span><span>' + msg + '</span>';
+  el.style.borderLeft = '3px solid ' + (type === 'ok' ? '#42be65' : type === 'err' ? '#fa4d56' : '#78a9ff');
+  $$('toast-box').appendChild(el);
+  setTimeout(function() { el.remove(); }, 3400);
+}
+
+// ── API LOG ───────────────────────────────────────────────────────────────────
+function addLog(method, url, status, ms) {
+  LOG.unshift({ t: new Date().toLocaleTimeString(), method: method, url: url, status: status, ms: ms });
+  if (LOG.length > 200) LOG.pop();
+  var empty = $$('log-empty');
+  if (empty) empty.style.display = 'none';
+  if ($$('page-apilog').classList.contains('active')) renderLog();
+}
+
+function renderLog() {
+  var mc = { GET: 'm-get', POST: 'm-post', PUT: 'm-put', DELETE: 'm-delete' };
+  $$('log-body').innerHTML = LOG.slice(0, 100).map(function(l) {
+    var sc = l.status < 300 ? 'color:var(--green)' : 'color:var(--red)';
+    return '<tr><td class="mono">' + l.t + '</td>' +
+      '<td><span class="badge ' + (mc[l.method] || 'b-grey') + '">' + l.method + '</span></td>' +
+      '<td class="mono" style="color:var(--muted)">' + l.url + '</td>' +
+      '<td class="mono" style="font-weight:700;' + sc + '">' + l.status + '</td>' +
+      '<td class="mono">' + l.ms + 'ms</td></tr>';
+  }).join('');
+}
+
+// ── HEALTH / CONNECTION ───────────────────────────────────────────────────────
+function setConnStatus(state) {
+  var dots = [$$('topDot'), $$('sidebarDot')];
+  var lbls = [$$('topConnLbl'), $$('sidebarConnLbl')];
+  var cls  = state === 'live' ? 'live' : state === 'down' ? 'down' : '';
+  var txt  = state === 'live' ? 'Connected' : state === 'down' ? 'Unreachable' : 'Not connected';
+  dots.forEach(function(d) { if (d) d.className = 'conn-dot' + (cls ? ' ' + cls : ''); });
+  lbls.forEach(function(l) { if (l) l.textContent = txt; });
+}
+
+async function checkHealth() {
+  if (!state.base && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    // running on the same host — skip explicit base check, trust relative URLs
+  }
+  try {
+    var base = resolveBase();
+    var r = await fetch(base + '/health');
+    if (!r.ok) throw new Error();
+    setConnStatus('live');
+    return true;
+  } catch(e) {
+    setConnStatus('down');
+    return false;
+  }
+}
+
+$$('btn-connect').addEventListener('click', function() {
+  state.base = $$('inp-base').value.trim();
+  state.key  = $$('inp-key').value.trim() || 'workshop-demo-key';
+  localStorage.setItem('sl_base', state.base);
+  localStorage.setItem('sl_key', state.key);
+  checkHealth().then(function(ok) {
+    toast(ok ? 'Connected to ' + (state.base || 'local server') : 'Could not reach server', ok ? 'ok' : 'err');
+  });
+});
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+  var page = $$('page-' + name);
+  if (page) page.classList.add('active');
+  var navEl = document.querySelector('.nav-item[data-page="' + name + '"]');
+  if (navEl) navEl.classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'deals')     loadAndRenderDeals();
+  if (name === 'pos')       loadAndRenderPOs();
+  if (name === 'headcount') loadAndRenderHC();
+  if (name === 'apilog')    renderLog();
+}
+
+document.querySelector('.sidebar-nav').addEventListener('click', function(e) {
+  var item = e.target.closest('.nav-item');
+  if (!item) return;
+  var page = item.getAttribute('data-page');
+  if (page) showPage(page);
+});
+
+// ── MODAL UTILS ───────────────────────────────────────────────────────────────
+function openModal(id)  { $$(id).classList.add('open'); }
+function closeModal(id) { $$(id).classList.remove('open'); }
+
+document.addEventListener('click', function(e) {
+  var c = e.target.getAttribute('data-close');
+  if (c) { closeModal(c); return; }
+  if (e.target.classList.contains('overlay')) e.target.classList.remove('open');
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') document.querySelectorAll('.overlay.open').forEach(function(m) { m.classList.remove('open'); });
+});
+
+// ── BADGES ────────────────────────────────────────────────────────────────────
+function statusBadge(s) {
+  var map = { slipped: 'b-red', at_risk: 'b-orange', closed: 'b-green', early_close: 'b-teal', open: 'b-blue' };
+  return '<span class="badge ' + (map[s] || 'b-grey') + '">' + s + '</span>';
+}
+function approvalBadge(s) {
+  var map = { approved: 'b-green', pending: 'b-yellow', rejected: 'b-red' };
+  return '<span class="badge ' + (map[s] || 'b-grey') + '">' + s + '</span>';
+}
+function budgetBadge(v) {
+  return v ? '<span class="badge b-green">Yes</span>' : '<span class="badge b-red">No</span>';
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// VARIANCE LOOKUP
+// ══════════════════════════════════════════════════════════════════════════════
+$$('btn-lk-fetch').addEventListener('click', runVarianceLookup);
+
+async function runVarianceLookup() {
+  var dept   = $$('lk-dept').value.trim();
+  var period = $$('lk-period').value.trim();
+  var acct   = $$('lk-acct').value.trim();
+  if (!dept || !period) { toast('Department and Period are required', 'info'); return; }
+
+  $$('lk-spinner').style.display = 'block';
+  $$('lk-results').style.display = 'none';
+
+  var params = { dept_id: dept, period: period };
+  if (acct) params.account_id = acct;
+
+  var crmOk = false, erpOk = false;
+
+  try {
+    var crm = await apiGet('/crm/variance-context', params);
+    crmOk = true;
+
+    var crmSum = $$('crm-summary');
+    crmSum.className = 'ctx-summary';
+    crmSum.textContent = crm.context_summary || 'No revenue-side context for this combination.';
+    $$('crm-raw').textContent = crm.context_summary || '—';
+
+    var slipped = crm.slipped_deals || [];
+    var earlyClose = crm.early_closes || [];
+    $$('crm-figures').innerHTML =
+      '<div class="ctx-figure"><div class="ctx-figure-label">Slipped value</div><div class="ctx-figure-value neg">' + fmtK(crm.total_slipped_value) + '</div></div>' +
+      '<div class="ctx-figure"><div class="ctx-figure-label">Slipped deals</div><div class="ctx-figure-value neg">' + slipped.length + '</div></div>' +
+      '<div class="ctx-figure"><div class="ctx-figure-label">Early closes</div><div class="ctx-figure-value pos">' + earlyClose.length + '</div></div>' +
+      '<div class="ctx-figure"><div class="ctx-figure-label">Early close value</div><div class="ctx-figure-value pos">' + fmtK(crm.total_early_close_value) + '</div></div>';
+
+    if (slipped.length) {
+      $$('lk-deals-body').innerHTML = slipped.map(function(x) {
+        return '<tr><td class="mono">' + x.deal_id + '</td><td><strong>' + x.account_name + '</strong></td>' +
+          '<td class="num">' + fmtD(x.arr_value) + '</td>' +
+          '<td style="font-size:12px;max-width:240px;color:var(--muted)">' + (x.slip_reason || '—') + '</td>' +
+          '<td class="mono">' + (x.rescheduled_close || '—') + '</td></tr>';
+      }).join('');
+      $$('lk-deals-wrap').style.display = 'block';
+    } else {
+      $$('lk-deals-wrap').style.display = 'none';
+    }
+  } catch(e) {
+    $$('crm-summary').className = 'ctx-summary empty';
+    $$('crm-summary').textContent = 'CRM context error: ' + e.message;
+    $$('crm-raw').textContent = e.message;
+    $$('crm-figures').innerHTML = '';
+    $$('lk-deals-wrap').style.display = 'none';
+  }
+
+  try {
+    var erp = await apiGet('/erp/cost-context', params);
+    erpOk = true;
+
+    var erpSum = $$('erp-summary');
+    erpSum.className = 'ctx-summary';
+    erpSum.textContent = erp.context_summary || 'No cost-side context for this combination.';
+    $$('erp-raw').textContent = erp.context_summary || '—';
+
+    var ubPOs  = erp.unbudgeted_purchase_orders  || [];
+    var ubHC   = erp.unbudgeted_headcount_events || [];
+    $$('erp-figures').innerHTML =
+      '<div class="ctx-figure"><div class="ctx-figure-label">Unplanned cost</div><div class="ctx-figure-value neg">' + fmtK(erp.total_unplanned_cost) + '</div></div>' +
+      '<div class="ctx-figure"><div class="ctx-figure-label">Unbudgeted POs</div><div class="ctx-figure-value neg">' + ubPOs.length + '</div></div>' +
+      '<div class="ctx-figure"><div class="ctx-figure-label">Headcount events</div><div class="ctx-figure-value neg">' + ubHC.length + '</div></div>';
+
+    if (ubPOs.length) {
+      $$('lk-pos-body').innerHTML = ubPOs.map(function(p) {
+        return '<tr><td class="mono">' + p.po_id + '</td><td><strong>' + p.vendor + '</strong></td>' +
+          '<td style="font-size:12px">' + (p.category || '—') + '</td>' +
+          '<td class="num">' + fmtD(p.amount) + '</td>' +
+          '<td style="font-size:12px;color:var(--muted)">' + (p.notes || '—') + '</td></tr>';
+      }).join('');
+      $$('lk-pos-wrap').style.display = 'block';
+    } else {
+      $$('lk-pos-wrap').style.display = 'none';
+    }
+  } catch(e) {
+    $$('erp-summary').className = 'ctx-summary empty';
+    $$('erp-summary').textContent = 'ERP context error: ' + e.message;
+    $$('erp-raw').textContent = e.message;
+    $$('erp-figures').innerHTML = '';
+    $$('lk-pos-wrap').style.display = 'none';
+  }
+
+  $$('lk-spinner').style.display = 'none';
+  $$('lk-results').style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════════════════════════
+$$('btn-dash-refresh').addEventListener('click', loadDashboard);
+
+async function loadDashboard() {
+  try {
+    var cs = await apiGet('/crm/stats');
+    var es = await apiGet('/erp/stats');
+    setEl('d-deals',      cs.total_deals || 0);
+    setEl('d-pipeline',   fmtK(cs.total_pipeline_value));
+    setEl('d-slipped',    (cs.by_status && cs.by_status.slipped) || 0);
+    setEl('d-pos',        es.total_pos || 0);
+    setEl('d-unbudgeted', es.unbudgeted_pos || 0);
+    setEl('d-hc',         es.total_headcount_events || 0);
+    renderStatusChart(cs.by_status || {});
+    renderDeptChart(es.by_department || {});
+
+    // ensure deals loaded for risk table
+    if (!DEALS.length) {
+      var dd = await apiGet('/crm/deals');
+      DEALS = dd.deals || [];
+    }
+    renderRiskTable();
+  } catch(e) {
+    toast('Dashboard error: ' + e.message, 'err');
+  }
+}
+
+function renderStatusChart(by) {
+  var colors = { open: '#0f62fe', slipped: '#da1e28', at_risk: '#ff832b', closed: '#198038', early_close: '#007d79' };
+  var total = Object.values(by).reduce(function(a,b){return a+b;}, 0) || 1;
+  $$('chart-status').innerHTML = Object.entries(by).map(function(kv) {
+    var pct = Math.max(4, kv[1] / total * 100).toFixed(0);
+    return '<div class="chart-row">' +
+      '<div class="chart-label">' + kv[0] + '</div>' +
+      '<div class="pbar"><div class="pbar-fill" style="width:' + pct + '%;background:' + (colors[kv[0]] || '#8d8d8d') + '"></div></div>' +
+      '<div class="chart-val">' + kv[1] + '</div></div>';
+  }).join('') || '<div class="hint">No data</div>';
+}
+
+function renderDeptChart(by) {
+  var total = Object.values(by).reduce(function(a,b){return a+b;}, 0) || 1;
+  $$('chart-dept').innerHTML = Object.entries(by).sort(function(a,b){return b[1]-a[1];}).map(function(kv) {
+    var pct = Math.max(4, kv[1] / total * 100).toFixed(0);
+    return '<div class="chart-row">' +
+      '<div class="chart-label wide">' + kv[0].replace('DEPT-','') + '</div>' +
+      '<div class="pbar"><div class="pbar-fill" style="width:' + pct + '%;background:var(--purple)"></div></div>' +
+      '<div class="chart-val">' + fmtK(kv[1]) + '</div></div>';
+  }).join('') || '<div class="hint">No data</div>';
+}
+
+function renderRiskTable() {
+  var risk = DEALS.filter(function(d) { return d.status === 'slipped' || d.status === 'at_risk'; });
+  if (!risk.length) {
+    $$('dash-risk').innerHTML = '<div class="hint" style="padding:8px 0">No at-risk or slipped deals — pipeline looks healthy.</div>';
+    return;
+  }
+  $$('dash-risk').innerHTML = '<div class="tbl-wrap" style="margin-bottom:0"><table>' +
+    '<thead><tr><th>Deal ID</th><th>Account</th><th>Dept</th><th>ARR</th><th>Status</th><th>Reason</th></tr></thead><tbody>' +
+    risk.map(function(d) {
+      return '<tr><td class="mono">' + d.deal_id + '</td>' +
+        '<td><strong>' + d.account_name + '</strong></td>' +
+        '<td style="font-size:11px;color:var(--muted)">' + d.dept_id + '</td>' +
+        '<td class="num">' + fmtD(d.arr_value) + '</td>' +
+        '<td>' + statusBadge(d.status) + '</td>' +
+        '<td style="font-size:12px;color:var(--muted);max-width:260px">' + (d.slip_reason || '—') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DEALS
+// ══════════════════════════════════════════════════════════════════════════════
+$$('btn-deal-filter').addEventListener('click', loadAndRenderDeals);
+$$('btn-new-deal').addEventListener('click', openNewDeal);
+$$('btn-save-deal').addEventListener('click', saveDeal);
+
+async function loadAndRenderDeals() {
+  try {
+    var p = {};
+    var q = sel('deal-q'), dept = sel('deal-dept'), status = sel('deal-status'), period = sel('deal-period');
+    if (q) p.search = q;
+    if (dept) p.dept_id = dept;
+    if (status) p.status = status;
+    if (period) p.period = period;
+    var data = await apiGet('/crm/deals', p);
+    DEALS = data.deals || [];
+    var cnt = $$('cnt-deals');
+    if (cnt) { cnt.textContent = DEALS.length; cnt.className = 'nav-badge show'; }
+    renderDeals();
+  } catch(e) { toast('Deals error: ' + e.message, 'err'); }
+}
+
+function renderDeals() {
+  var tbody = $$('deals-body'), empty = $$('deals-empty');
+  if (!DEALS.length) { tbody.innerHTML = ''; if(empty) empty.style.display = ''; return; }
+  if (empty) empty.style.display = 'none';
+  tbody.innerHTML = DEALS.map(function(d) {
+    return '<tr>' +
+      '<td class="mono">' + d.deal_id + '</td>' +
+      '<td><strong>' + d.account_name + '</strong></td>' +
+      '<td style="font-size:12px">' + (d.account_region || '—') + '</td>' +
+      '<td style="font-size:11px;color:var(--muted)">' + d.dept_id + '</td>' +
+      '<td style="font-size:12px">' + d.stage + '</td>' +
+      '<td class="num">' + fmtD(d.arr_value) + '</td>' +
+      '<td>' + statusBadge(d.status) + '</td>' +
+      '<td class="mono">' + (d.period_impacted || '—') + '</td>' +
+      '<td class="mono">' + d.probability + '%</td>' +
+      '<td class="act">' +
+        '<button class="btn btn-ghost btn-sm" data-edit-deal="' + d.deal_id + '">✏</button> ' +
+        '<button class="btn btn-danger btn-sm" data-del-deal="' + d.deal_id + '">🗑</button>' +
+      '</td></tr>';
+  }).join('');
+}
+
+document.addEventListener('click', function(e) {
+  var editId = e.target.getAttribute('data-edit-deal');
+  if (editId) { editDeal(editId); return; }
+  var delId = e.target.getAttribute('data-del-deal');
+  if (delId) { deleteDeal(delId); return; }
+  var editPoId2 = e.target.getAttribute('data-edit-po');
+  if (editPoId2) { editPO(editPoId2); return; }
+  var delPoId = e.target.getAttribute('data-del-po');
+  if (delPoId) { deletePO(delPoId); return; }
+  var editHcId2 = e.target.getAttribute('data-edit-hc');
+  if (editHcId2) { editHC(editHcId2); return; }
+  var delHcId = e.target.getAttribute('data-del-hc');
+  if (delHcId) { deleteHC(delHcId); return; }
+});
+
+function openNewDeal() {
+  editDealId = null;
+  setEl('modal-deal-title', 'New Deal');
+  setEl('btn-save-deal', 'Save Deal');
+  ['d-account_name','d-account_region','d-owner','d-slip_reason','d-period_impacted'].forEach(function(id){ $$(id).value=''; });
+  $$('d-arr_value').value=''; $$('d-probability').value=''; $$('d-scheduled_close').value='';
+  openModal('modal-deal');
+}
+
+function editDeal(id) {
+  var d = DEALS.find(function(x){return x.deal_id===id;});
+  if (!d) return;
+  editDealId = id;
+  setEl('modal-deal-title', 'Edit Deal — ' + id);
+  setEl('btn-save-deal', 'Update Deal');
+  $$('d-account_name').value  = d.account_name  || '';
+  $$('d-account_region').value= d.account_region|| '';
+  $$('d-owner').value         = d.owner         || '';
+  $$('d-slip_reason').value   = d.slip_reason   || '';
+  $$('d-period_impacted').value=d.period_impacted|| '';
+  $$('d-arr_value').value     = d.arr_value      || '';
+  $$('d-probability').value   = d.probability    || '';
+  $$('d-scheduled_close').value=d.scheduled_close|| '';
+  $$('d-dept_id').value       = d.dept_id        || '';
+  $$('d-stage').value         = d.stage          || '';
+  $$('d-status').value        = d.status         || 'open';
+  $$('d-account_id').value    = d.account_id     || 'REV-001';
+  $$('d-classification').value= d.classification || 'on_track';
+  openModal('modal-deal');
+}
+
+async function saveDeal() {
+  var body = {
+    account_name: sel('d-account_name'), account_region: sel('d-account_region'),
+    owner: sel('d-owner'), dept_id: sel('d-dept_id'), stage: sel('d-stage'),
+    status: sel('d-status'), account_id: sel('d-account_id'), classification: sel('d-classification'),
+    slip_reason: sel('d-slip_reason'), period_impacted: sel('d-period_impacted'),
+    arr_value: Number(sel('d-arr_value')), probability: Number(sel('d-probability')) || 50
+  };
+  var sc = sel('d-scheduled_close'); if (sc) body.scheduled_close = sc;
+  if (!body.account_name || !body.arr_value) { toast('Account name and ARR are required', 'err'); return; }
+  try {
+    if (editDealId) { await apiCall('PUT', '/crm/deals/' + editDealId, body); toast('Deal updated'); }
+    else            { await apiCall('POST', '/crm/deals', body); toast('Deal created'); }
+    closeModal('modal-deal');
+    await loadAndRenderDeals();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function deleteDeal(id) {
+  if (!confirm('Delete deal ' + id + '?')) return;
+  try {
+    await apiCall('DELETE', '/crm/deals/' + id, null);
+    toast('Deal deleted');
+    await loadAndRenderDeals();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PIPELINE
+// ══════════════════════════════════════════════════════════════════════════════
+$$('btn-pipe-fetch').addEventListener('click', fetchPipeline);
+
+async function fetchPipeline() {
+  var dept = sel('pipe-dept'), period = sel('pipe-period').trim();
+  if (!dept || !period) { toast('Select department and enter period', 'info'); return; }
+  try {
+    var d = await apiGet('/crm/pipeline-summary', { dept_id: dept, period: period });
+    var cov = d.coverage_ratio || 0;
+    var cc = cov >= 1.5 ? 'var(--green)' : cov >= 1.0 ? 'var(--orange)' : 'var(--red)';
+    var lbl = cov >= 1.5 ? 'Healthy coverage' : cov >= 1.0 ? 'Adequate — monitor' : 'Low — intervention needed';
+    $$('pipe-result').innerHTML =
+      '<div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">' +
+      '<div class="stat-card blue"><div class="stat-lbl">Open Pipeline</div><div class="stat-val blue">' + fmtK(d.open_pipeline) + '</div></div>' +
+      '<div class="stat-card green"><div class="stat-lbl">On Track</div><div class="stat-val green">' + fmtK(d.on_track) + '</div></div>' +
+      '<div class="stat-card red"><div class="stat-lbl">Slipped</div><div class="stat-val red">' + fmtK(d.slipped) + '</div></div>' +
+      '<div class="stat-card orange"><div class="stat-lbl">At Risk</div><div class="stat-val orange">' + fmtK(d.at_risk) + '</div></div>' +
+      '<div class="stat-card"><div class="stat-lbl">Coverage Ratio</div><div class="stat-val" style="color:' + cc + '">' + cov + 'x</div><div class="stat-hint">' + lbl + '</div></div>' +
+      '</div>';
+  } catch(e) {
+    $$('pipe-result').innerHTML = '<div class="card" style="color:var(--red)">' + e.message + '</div>';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PURCHASE ORDERS
+// ══════════════════════════════════════════════════════════════════════════════
+$$('btn-po-filter').addEventListener('click', loadAndRenderPOs);
+$$('btn-new-po').addEventListener('click', openNewPO);
+$$('btn-save-po').addEventListener('click', savePO);
+
+async function loadAndRenderPOs() {
+  try {
+    var p = {};
+    var q = sel('po-q'), dept = sel('po-dept'), appr = sel('po-appr'), budg = sel('po-budg');
+    if (q) p.search = q;
+    if (dept) p.dept_id = dept;
+    if (appr) p.approval_status = appr;
+    var data = await apiGet('/erp/purchase-orders', p);
+    POS = data.purchase_orders || [];
+    if (budg !== '') POS = POS.filter(function(x){ return String(x.is_budgeted) === budg; });
+    var cnt = $$('cnt-pos');
+    if (cnt) { cnt.textContent = POS.length; cnt.className = 'nav-badge show'; }
+    renderPOs();
+  } catch(e) { toast('PO error: ' + e.message, 'err'); }
+}
+
+function renderPOs() {
+  var tbody = $$('pos-body'), empty = $$('pos-empty');
+  if (!POS.length) { tbody.innerHTML = ''; if(empty) empty.style.display = ''; return; }
+  if (empty) empty.style.display = 'none';
+  tbody.innerHTML = POS.map(function(p) {
+    return '<tr>' +
+      '<td class="mono">' + p.po_id + '</td>' +
+      '<td style="font-size:11px;color:var(--muted)">' + p.dept_id + '</td>' +
+      '<td><strong>' + p.vendor + '</strong></td>' +
+      '<td style="font-size:12px">' + (p.category || '—') + '</td>' +
+      '<td class="num">' + fmtD(p.amount) + '</td>' +
+      '<td class="mono">' + (p.period || '—') + '</td>' +
+      '<td>' + budgetBadge(p.is_budgeted) + '</td>' +
+      '<td>' + approvalBadge(p.approval_status) + '</td>' +
+      '<td style="font-size:12px">' + (p.approver || '—') + '</td>' +
+      '<td class="act">' +
+        '<button class="btn btn-ghost btn-sm" data-edit-po="' + p.po_id + '">✏</button> ' +
+        '<button class="btn btn-danger btn-sm" data-del-po="' + p.po_id + '">🗑</button>' +
+      '</td></tr>';
+  }).join('');
+}
+
+function openNewPO() {
+  editPoId = null;
+  setEl('modal-po-title', 'New Purchase Order');
+  setEl('btn-save-po', 'Save PO');
+  ['p-vendor','p-category','p-period','p-approver','p-notes'].forEach(function(id){ $$(id).value=''; });
+  $$('p-amount').value=''; $$('p-po_date').value='';
+  openModal('modal-po');
+}
+
+function editPO(id) {
+  var p = POS.find(function(x){return x.po_id===id;});
+  if (!p) return;
+  editPoId = id;
+  setEl('modal-po-title', 'Edit PO — ' + id);
+  setEl('btn-save-po', 'Update PO');
+  $$('p-vendor').value          = p.vendor          || '';
+  $$('p-category').value        = p.category        || '';
+  $$('p-period').value          = p.period          || '';
+  $$('p-approver').value        = p.approver        || '';
+  $$('p-notes').value           = p.notes           || '';
+  $$('p-amount').value          = p.amount          || '';
+  $$('p-po_date').value         = p.po_date         || '';
+  $$('p-dept_id').value         = p.dept_id;
+  $$('p-account_id').value      = p.account_id;
+  $$('p-approval_status').value = p.approval_status;
+  $$('p-is_budgeted').value     = String(p.is_budgeted);
+  openModal('modal-po');
+}
+
+async function savePO() {
+  var body = {
+    dept_id: sel('p-dept_id'), vendor: sel('p-vendor'), category: sel('p-category'),
+    account_id: sel('p-account_id'), period: sel('p-period'), approver: sel('p-approver'),
+    notes: sel('p-notes'), approval_status: sel('p-approval_status'),
+    amount: Number(sel('p-amount')), is_budgeted: sel('p-is_budgeted') === 'true'
+  };
+  var pd = sel('p-po_date'); if (pd) body.po_date = pd;
+  if (!body.dept_id || !body.vendor || !body.amount) { toast('Dept, vendor and amount are required', 'err'); return; }
+  try {
+    if (editPoId) { await apiCall('PUT', '/erp/purchase-orders/' + editPoId, body); toast('PO updated'); }
+    else          { await apiCall('POST', '/erp/purchase-orders', body); toast('PO created'); }
+    closeModal('modal-po');
+    await loadAndRenderPOs();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function deletePO(id) {
+  if (!confirm('Delete PO ' + id + '?')) return;
+  try {
+    await apiCall('DELETE', '/erp/purchase-orders/' + id, null);
+    toast('PO deleted');
+    await loadAndRenderPOs();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HEADCOUNT
+// ══════════════════════════════════════════════════════════════════════════════
+$$('btn-hc-filter').addEventListener('click', loadAndRenderHC);
+$$('btn-new-hc').addEventListener('click', openNewHC);
+$$('btn-save-hc').addEventListener('click', saveHC);
+
+async function loadAndRenderHC() {
+  try {
+    var p = {};
+    var dept = sel('hc-dept'), type = sel('hc-type'), budg = sel('hc-budg');
+    if (dept) p.dept_id = dept;
+    if (type) p.event_type = type;
+    var data = await apiGet('/erp/headcount-events', p);
+    HCS = data.headcount_events || [];
+    if (budg !== '') HCS = HCS.filter(function(x){ return String(x.budget_included) === budg; });
+    renderHC();
+  } catch(e) { toast('Headcount error: ' + e.message, 'err'); }
+}
+
+function renderHC() {
+  var tbody = $$('hc-body'), empty = $$('hc-empty');
+  if (!HCS.length) { tbody.innerHTML = ''; if(empty) empty.style.display = ''; return; }
+  if (empty) empty.style.display = 'none';
+  tbody.innerHTML = HCS.map(function(h) {
+    return '<tr>' +
+      '<td class="mono">' + h.event_id + '</td>' +
+      '<td style="font-size:11px;color:var(--muted)">' + h.dept_id + '</td>' +
+      '<td>' + (h.event_type === 'contractor' ? '<span class="badge b-purple">contractor</span>' : '<span class="badge b-blue">new_hire</span>') + '</td>' +
+      '<td><strong>' + (h.role || '—') + '</strong></td>' +
+      '<td class="num">' + fmtD(h.monthly_cost) + '/mo</td>' +
+      '<td class="mono">' + (h.period_first_impact || '—') + '</td>' +
+      '<td>' + budgetBadge(h.budget_included) + '</td>' +
+      '<td style="font-size:12px;color:var(--muted);max-width:200px">' + (h.notes || '—') + '</td>' +
+      '<td class="act">' +
+        '<button class="btn btn-ghost btn-sm" data-edit-hc="' + h.event_id + '">✏</button> ' +
+        '<button class="btn btn-danger btn-sm" data-del-hc="' + h.event_id + '">🗑</button>' +
+      '</td></tr>';
+  }).join('');
+}
+
+function openNewHC() {
+  editHcId = null;
+  setEl('modal-hc-title', 'New Headcount Event');
+  setEl('btn-save-hc', 'Save Event');
+  ['h-role','h-notes','h-period_first_impact'].forEach(function(id){ $$(id).value=''; });
+  $$('h-monthly_cost').value=''; $$('h-effective_date').value='';
+  openModal('modal-hc');
+}
+
+function editHC(id) {
+  var h = HCS.find(function(x){return x.event_id===id;});
+  if (!h) return;
+  editHcId = id;
+  setEl('modal-hc-title', 'Edit Event — ' + id);
+  setEl('btn-save-hc', 'Update Event');
+  $$('h-role').value               = h.role               || '';
+  $$('h-notes').value              = h.notes              || '';
+  $$('h-period_first_impact').value= h.period_first_impact|| '';
+  $$('h-monthly_cost').value       = h.monthly_cost       || '';
+  $$('h-effective_date').value     = h.effective_date     || '';
+  $$('h-dept_id').value            = h.dept_id;
+  $$('h-event_type').value         = h.event_type         || 'new_hire';
+  $$('h-budget_included').value    = String(h.budget_included);
+  openModal('modal-hc');
+}
+
+async function saveHC() {
+  var body = {
+    dept_id: sel('h-dept_id'), event_type: sel('h-event_type'),
+    role: sel('h-role'), notes: sel('h-notes'),
+    period_first_impact: sel('h-period_first_impact'),
+    monthly_cost: Number(sel('h-monthly_cost')),
+    budget_included: sel('h-budget_included') === 'true'
+  };
+  var ed = sel('h-effective_date'); if (ed) body.effective_date = ed;
+  if (!body.dept_id || !body.role || !body.monthly_cost) { toast('Dept, role and monthly cost are required', 'err'); return; }
+  try {
+    if (editHcId) { await apiCall('PUT', '/erp/headcount-events/' + editHcId, body); toast('Event updated'); }
+    else          { await apiCall('POST', '/erp/headcount-events', body); toast('Event created'); }
+    closeModal('modal-hc');
+    await loadAndRenderHC();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function deleteHC(id) {
+  if (!confirm('Delete headcount event ' + id + '?')) return;
+  try {
+    await apiCall('DELETE', '/erp/headcount-events/' + id, null);
+    toast('Event deleted');
+    await loadAndRenderHC();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ── API LOG CLEAR ──────────────────────────────────────────────────────────────
+$$('btn-clear-log').addEventListener('click', function() {
+  LOG.length = 0;
+  $$('log-body').innerHTML = '';
+  var empty = $$('log-empty');
+  if (empty) empty.style.display = '';
+  toast('Log cleared', 'info');
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+(function init() {
+  // restore saved connection settings
+  $$('inp-base').value = state.base;
+  $$('inp-key').value  = state.key;
+
+  // auto health check — works whether base is set or we're on the same origin
+  checkHealth();
+
+  // pre-load sidebar counts
+  apiGet('/crm/deals').then(function(d) {
+    var cnt = $$('cnt-deals');
+    if (cnt && d.deals) { cnt.textContent = d.deals.length; cnt.className = 'nav-badge show'; DEALS = d.deals; }
+  }).catch(function(){});
+
+  apiGet('/erp/purchase-orders').then(function(d) {
+    var cnt = $$('cnt-pos');
+    if (cnt && d.purchase_orders) { cnt.textContent = d.purchase_orders.length; cnt.className = 'nav-badge show'; POS = d.purchase_orders; }
+  }).catch(function(){});
+})();
+</script>
+</body>
+</html>

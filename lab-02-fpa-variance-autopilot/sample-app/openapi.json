@@ -1,0 +1,306 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SalesLens — FP&A External Systems API",
+    "description": "Mock CRM and ERP endpoints for the FP&A Variance Autopilot workshop. Provides deal pipeline context (CRM) and operational cost context (ERP) that the watsonx Orchestrate agent queries to explain Planning Analytics variances.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "IBM Planning Analytics Workshop",
+      "url": "https://github.com/ibm-self-serve-assets/building-blocks"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://your-app.codeengine.appdomain.cloud",
+      "description": "IBM Code Engine deployment (update after deploy)"
+    },
+    {
+      "url": "http://localhost:8080",
+      "description": "Local development"
+    }
+  ],
+  "security": [
+    { "ApiKeyAuth": [] }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Api-Key"
+      }
+    },
+    "schemas": {
+      "Deal": {
+        "type": "object",
+        "properties": {
+          "deal_id":           { "type": "string", "example": "CRM-2024-001" },
+          "account_name":      { "type": "string", "example": "Acme Corp" },
+          "account_region":    { "type": "string", "example": "North America" },
+          "dept_id":           { "type": "string", "example": "DEPT-NA-SALES" },
+          "stage":             { "type": "string", "example": "Contract Review" },
+          "arr_value":         { "type": "number", "example": 120000 },
+          "scheduled_close":   { "type": "string", "format": "date", "example": "2024-01-31" },
+          "actual_close":      { "type": "string", "format": "date", "nullable": true },
+          "status":            { "type": "string", "enum": ["slipped","at_risk","closed","early_close","recovery"] },
+          "classification":    { "type": "string", "enum": ["timing","structural","market_conditions","external_regulatory","favorable","recovery"] },
+          "slip_reason":       { "type": "string", "nullable": true },
+          "rescheduled_close": { "type": "string", "format": "date", "nullable": true },
+          "probability":       { "type": "integer", "minimum": 0, "maximum": 100 },
+          "period_impacted":   { "type": "string", "example": "2024-01" },
+          "period_recovered":  { "type": "string", "nullable": true, "example": "2024-02" }
+        }
+      },
+      "PurchaseOrder": {
+        "type": "object",
+        "properties": {
+          "po_id":             { "type": "string", "example": "PO-2024-0142" },
+          "dept_id":           { "type": "string", "example": "DEPT-NA-SALES" },
+          "vendor":            { "type": "string", "example": "TechWorld Events LLC" },
+          "category":          { "type": "string", "example": "Events & Conferences" },
+          "account_id":        { "type": "string", "example": "OPEX-001" },
+          "amount":            { "type": "number", "example": 18000 },
+          "po_date":           { "type": "string", "format": "date" },
+          "period":            { "type": "string", "example": "2024-01" },
+          "is_budgeted":       { "type": "boolean" },
+          "approval_status":   { "type": "string", "example": "approved" },
+          "approver":          { "type": "string", "example": "VP Sales" },
+          "notes":             { "type": "string" }
+        }
+      },
+      "HeadcountEvent": {
+        "type": "object",
+        "properties": {
+          "event_id":            { "type": "string", "example": "HC-2024-001" },
+          "dept_id":             { "type": "string", "example": "DEPT-NA-SALES" },
+          "event_type":          { "type": "string", "enum": ["new_hire","contractor","termination","transfer"] },
+          "role":                { "type": "string", "example": "Enterprise Account Executive" },
+          "effective_date":      { "type": "string", "format": "date" },
+          "monthly_cost":        { "type": "number", "example": 8500 },
+          "period_first_impact": { "type": "string", "example": "2024-01" },
+          "budget_included":     { "type": "boolean" },
+          "notes":               { "type": "string" }
+        }
+      },
+      "VarianceContext": {
+        "type": "object",
+        "properties": {
+          "dept_id":                    { "type": "string" },
+          "period":                     { "type": "string" },
+          "account_id":                 { "type": "string" },
+          "context_summary":            { "type": "string", "description": "Natural language summary for the agent" },
+          "slipped_deals":              { "type": "array", "items": { "$ref": "#/components/schemas/Deal" } },
+          "early_closes":               { "type": "array", "items": { "$ref": "#/components/schemas/Deal" } },
+          "total_slipped_value":        { "type": "number" },
+          "total_early_close_value":    { "type": "number" },
+          "pipeline_summary":           { "type": "object", "nullable": true },
+          "data_source":                { "type": "string" }
+        }
+      },
+      "CostContext": {
+        "type": "object",
+        "properties": {
+          "dept_id":                         { "type": "string" },
+          "period":                          { "type": "string" },
+          "account_id":                      { "type": "string" },
+          "context_summary":                 { "type": "string", "description": "Natural language summary for the agent" },
+          "total_unplanned_cost":            { "type": "number" },
+          "unbudgeted_purchase_orders":      { "type": "array", "items": { "$ref": "#/components/schemas/PurchaseOrder" } },
+          "unbudgeted_headcount_events":     { "type": "array", "items": { "$ref": "#/components/schemas/HeadcountEvent" } },
+          "data_source":                     { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Health check",
+        "description": "Returns service health status. No authentication required.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status":          { "type": "string", "example": "ok" },
+                    "service":         { "type": "string" },
+                    "version":         { "type": "string" },
+                    "timestamp":       { "type": "string", "format": "date-time" },
+                    "uptime_seconds":  { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/variance-context": {
+      "get": {
+        "operationId": "getCrmVarianceContext",
+        "summary": "Get CRM context for a revenue variance",
+        "description": "Returns slipped deals, early closes, and pipeline coverage for a specific department and period. Use this as the primary CRM lookup when investigating a revenue budget variance.",
+        "parameters": [
+          {
+            "name": "dept_id",
+            "in": "query",
+            "required": true,
+            "description": "Department ID from Planning Analytics (e.g. DEPT-NA-SALES)",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "description": "Time period in YYYY-MM format matching Planning Analytics Time dimension (e.g. 2024-01)",
+            "schema": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" }
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": false,
+            "description": "Account ID from Planning Analytics to filter by revenue type (e.g. REV-001)",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CRM variance context",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VarianceContext" }
+              }
+            }
+          },
+          "400": { "description": "Missing required parameters" },
+          "401": { "description": "Invalid or missing API key" }
+        }
+      }
+    },
+    "/crm/deals": {
+      "get": {
+        "operationId": "getCrmDeals",
+        "summary": "Query CRM deals",
+        "description": "Filter deals by department, period, and status.",
+        "parameters": [
+          { "name": "dept_id",    "in": "query", "schema": { "type": "string" } },
+          { "name": "period",     "in": "query", "schema": { "type": "string" } },
+          { "name": "status",     "in": "query", "schema": { "type": "string", "enum": ["slipped","at_risk","closed","early_close","recovery"] } },
+          { "name": "account_id", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of matching deals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": { "type": "integer" },
+                    "deals": { "type": "array", "items": { "$ref": "#/components/schemas/Deal" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key" }
+        }
+      }
+    },
+    "/crm/pipeline-summary": {
+      "get": {
+        "operationId": "getCrmPipelineSummary",
+        "summary": "Get pipeline coverage metrics",
+        "description": "Returns pipeline coverage ratio and risk breakdown for a department/period.",
+        "parameters": [
+          { "name": "dept_id", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "period",  "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Pipeline summary metrics" },
+          "400": { "description": "Missing required parameters" },
+          "401": { "description": "Invalid or missing API key" },
+          "404": { "description": "No data for this department/period" }
+        }
+      }
+    },
+    "/erp/cost-context": {
+      "get": {
+        "operationId": "getErpCostContext",
+        "summary": "Get ERP context for an OpEx variance",
+        "description": "Returns unbudgeted purchase orders and headcount events for a specific department and period. Use this as the primary ERP lookup when investigating an operating expense budget variance.",
+        "parameters": [
+          {
+            "name": "dept_id",
+            "in": "query",
+            "required": true,
+            "description": "Department ID from Planning Analytics (e.g. DEPT-NA-SALES)",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "description": "Time period in YYYY-MM format (e.g. 2024-01)",
+            "schema": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" }
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": false,
+            "description": "Account ID from Planning Analytics (e.g. OPEX-001)",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ERP cost context",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CostContext" }
+              }
+            }
+          },
+          "400": { "description": "Missing required parameters" },
+          "401": { "description": "Invalid or missing API key" }
+        }
+      }
+    },
+    "/erp/purchase-orders": {
+      "get": {
+        "operationId": "getErpPurchaseOrders",
+        "summary": "Query purchase orders",
+        "description": "Filter ERP purchase orders by department, period, and account.",
+        "parameters": [
+          { "name": "dept_id",    "in": "query", "schema": { "type": "string" } },
+          { "name": "period",     "in": "query", "schema": { "type": "string" } },
+          { "name": "account_id", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Purchase order list" },
+          "401": { "description": "Invalid or missing API key" }
+        }
+      }
+    },
+    "/erp/headcount-events": {
+      "get": {
+        "operationId": "getErpHeadcountEvents",
+        "summary": "Query headcount events",
+        "description": "Returns new hire or contractor events that impact OpEx for a department/period.",
+        "parameters": [
+          { "name": "dept_id", "in": "query", "schema": { "type": "string" } },
+          { "name": "period",  "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Headcount events list" },
+          "401": { "description": "Invalid or missing API key" }
+        }
+      }
+    }
+  }
+}

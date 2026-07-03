@@ -1,0 +1,21 @@
+# ── Excluded per project requirements ────────────────────────────────────────
+bob-task-*.json
+FACILITATOR_GUIDE.md
+Planning Analytics Workshop Schedule.pdf
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Archives ──────────────────────────────────────────────────────────────────
+*.zip
+
+# ── Editor ───────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp

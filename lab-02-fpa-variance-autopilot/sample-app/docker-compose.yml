@@ -1,0 +1,27 @@
+version: '3.9'
+
+services:
+  fpa-mock-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: fpa-external-systems-mock:latest
+    container_name: fpa-mock-api
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      # Change this key before sharing with participants
+      - API_KEY=workshop-demo-key
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      com.ibm.workshop: "fpa-variance-autopilot"
+      com.ibm.lab: "lab-02"
