@@ -429,20 +429,28 @@ td.act{white-space:nowrap;text-align:right}
       <div class="page-hdr">
         <div class="page-hdr-left">
           <div class="page-title">CRM — Pipeline Summary</div>
-          <div class="page-sub">GET /crm/pipeline-summary · coverage ratios by dept &amp; period</div>
+          <div class="page-sub">GET /crm/pipeline-summary · all depts loaded by default · filter to drill down</div>
         </div>
+        <button class="btn btn-secondary btn-sm" id="btn-pipe-refresh">↺ Refresh</button>
       </div>
       <div class="toolbar">
         <select id="pipe-dept">
-          <option value="">Select Department…</option>
+          <option value="">All Departments</option>
           <option>DEPT-NA-SALES</option><option>DEPT-EMEA-SALES</option><option>DEPT-APAC-SALES</option><option>DEPT-LATAM-SALES</option>
         </select>
-        <input id="pipe-period" placeholder="Period (2024-01)" style="width:150px">
-        <button class="btn btn-primary" id="btn-pipe-fetch">Get Summary</button>
+        <input id="pipe-period" placeholder="Filter by period (2024-01)" style="width:180px">
+        <button class="btn btn-secondary" id="btn-pipe-fetch">Filter</button>
+        <button class="btn btn-ghost btn-sm" id="btn-pipe-clear">Clear</button>
+        <span class="toolbar-hint" id="pipe-count"></span>
       </div>
-      <div id="pipe-result">
-        <div class="empty"><div class="empty-icon">📈</div><div class="empty-msg">Select a department and period to load pipeline data</div></div>
+      <div id="pipe-summary-stats" style="margin-bottom:16px"></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Department</th><th>Period</th><th>Open Pipeline</th><th>On Track</th><th>Slipped</th><th>At Risk</th><th>Early Close</th><th>Deals</th><th>Quota</th><th>Coverage</th></tr></thead>
+          <tbody id="pipe-body"></tbody>
+        </table>
       </div>
+      <div class="empty" id="pipe-empty" style="display:none"><div class="empty-icon">📈</div><div class="empty-msg">No pipeline data matches your filters</div></div>
     </div>
 
     <!-- ════ PURCHASE ORDERS ════ -->
@@ -757,6 +765,7 @@ function showPage(name) {
   if (navEl) navEl.classList.add('active');
   if (name === 'dashboard') loadDashboard();
   if (name === 'deals')     loadAndRenderDeals();
+  if (name === 'pipeline')  loadAndRenderPipeline();
   if (name === 'pos')       loadAndRenderPOs();
   if (name === 'headcount') loadAndRenderHC();
   if (name === 'apilog')    renderLog();
@@ -1080,27 +1089,83 @@ async function deleteDeal(id) {
 // ══════════════════════════════════════════════════════════════════════════════
 // PIPELINE
 // ══════════════════════════════════════════════════════════════════════════════
-$$('btn-pipe-fetch').addEventListener('click', fetchPipeline);
+var ALL_PIPELINE = [];
 
-async function fetchPipeline() {
-  var dept = sel('pipe-dept'), period = sel('pipe-period').trim();
-  if (!dept || !period) { toast('Select department and enter period', 'info'); return; }
+$$('btn-pipe-fetch').addEventListener('click', filterPipeline);
+$$('btn-pipe-refresh').addEventListener('click', loadAndRenderPipeline);
+$$('btn-pipe-clear').addEventListener('click', function() {
+  $$('pipe-dept').value = '';
+  $$('pipe-period').value = '';
+  renderPipeline(ALL_PIPELINE);
+});
+
+async function loadAndRenderPipeline() {
   try {
-    var d = await apiGet('/crm/pipeline-summary', { dept_id: dept, period: period });
-    var cov = d.coverage_ratio || 0;
-    var cc = cov >= 1.5 ? 'var(--green)' : cov >= 1.0 ? 'var(--orange)' : 'var(--red)';
-    var lbl = cov >= 1.5 ? 'Healthy coverage' : cov >= 1.0 ? 'Adequate — monitor' : 'Low — intervention needed';
-    $$('pipe-result').innerHTML =
-      '<div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">' +
-      '<div class="stat-card blue"><div class="stat-lbl">Open Pipeline</div><div class="stat-val blue">' + fmtK(d.open_pipeline) + '</div></div>' +
-      '<div class="stat-card green"><div class="stat-lbl">On Track</div><div class="stat-val green">' + fmtK(d.on_track) + '</div></div>' +
-      '<div class="stat-card red"><div class="stat-lbl">Slipped</div><div class="stat-val red">' + fmtK(d.slipped) + '</div></div>' +
-      '<div class="stat-card orange"><div class="stat-lbl">At Risk</div><div class="stat-val orange">' + fmtK(d.at_risk) + '</div></div>' +
-      '<div class="stat-card"><div class="stat-lbl">Coverage Ratio</div><div class="stat-val" style="color:' + cc + '">' + cov + 'x</div><div class="stat-hint">' + lbl + '</div></div>' +
-      '</div>';
-  } catch(e) {
-    $$('pipe-result').innerHTML = '<div class="card" style="color:var(--red)">' + e.message + '</div>';
+    var data = await apiGet('/crm/pipeline-summary');
+    ALL_PIPELINE = data.pipeline || [];
+    renderPipeline(ALL_PIPELINE);
+  } catch(e) { toast('Pipeline error: ' + e.message, 'err'); }
+}
+
+function filterPipeline() {
+  var dept = sel('pipe-dept'), period = sel('pipe-period').trim();
+  var rows = ALL_PIPELINE.filter(function(r) {
+    if (dept   && r.dept_id !== dept)  return false;
+    if (period && r.period  !== period) return false;
+    return true;
+  });
+  renderPipeline(rows);
+}
+
+function coverageColor(cov) {
+  return cov >= 1.5 ? 'var(--green)' : cov >= 1.0 ? 'var(--orange)' : 'var(--red)';
+}
+
+function renderPipeline(rows) {
+  var tbody = $$('pipe-body'), empty = $$('pipe-empty'), countEl = $$('pipe-count');
+  if (!rows.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = '';
+    $$('pipe-summary-stats').innerHTML = '';
+    if (countEl) countEl.textContent = '0 rows';
+    return;
   }
+  if (empty) empty.style.display = 'none';
+  if (countEl) countEl.textContent = rows.length + ' row' + (rows.length !== 1 ? 's' : '');
+
+  // Summary stat cards
+  var totPipeline = rows.reduce(function(s,r){return s+r.open_pipeline;},0);
+  var totSlipped  = rows.reduce(function(s,r){return s+(r.slipped||0);},0);
+  var totAtRisk   = rows.reduce(function(s,r){return s+(r.at_risk||0);},0);
+  var avgCov      = rows.reduce(function(s,r){return s+r.coverage_ratio;},0) / rows.length;
+  var lowCovCount = rows.filter(function(r){return r.coverage_ratio < 1.0;}).length;
+  var covColor    = avgCov >= 1.5 ? 'var(--green)' : avgCov >= 1.0 ? 'var(--orange)' : 'var(--red)';
+
+  $$('pipe-summary-stats').innerHTML =
+    '<div class="stat-grid" style="grid-template-columns:repeat(5,1fr)">' +
+    '<div class="stat-card blue"><div class="stat-lbl">Total Open Pipeline</div><div class="stat-val blue">' + fmtK(totPipeline) + '</div><div class="stat-hint">' + rows.length + ' snapshots</div></div>' +
+    '<div class="stat-card red"><div class="stat-lbl">Total Slipped</div><div class="stat-val red">' + fmtK(totSlipped) + '</div><div class="stat-hint">revenue deferred</div></div>' +
+    '<div class="stat-card orange"><div class="stat-lbl">Total At Risk</div><div class="stat-val orange">' + fmtK(totAtRisk) + '</div><div class="stat-hint">may not close</div></div>' +
+    '<div class="stat-card"><div class="stat-lbl">Avg Coverage</div><div class="stat-val" style="color:' + covColor + '">' + avgCov.toFixed(2) + 'x</div></div>' +
+    '<div class="stat-card red"><div class="stat-lbl">Low Coverage</div><div class="stat-val red">' + lowCovCount + '</div><div class="stat-hint">periods &lt; 1.0x</div></div>' +
+    '</div>';
+
+  tbody.innerHTML = rows.map(function(r) {
+    var cov = r.coverage_ratio || 0;
+    var cc  = coverageColor(cov);
+    return '<tr>' +
+      '<td style="font-size:12px;font-weight:600">' + r.dept_id.replace('DEPT-','') + '</td>' +
+      '<td class="mono">' + r.period + '</td>' +
+      '<td class="num">' + fmtD(r.open_pipeline) + '</td>' +
+      '<td class="num" style="color:var(--green)">' + fmtD(r.on_track) + '</td>' +
+      '<td class="num" style="color:var(--red)">'   + (r.slipped    ? fmtD(r.slipped)    : '<span style="color:var(--dim)">—</span>') + '</td>' +
+      '<td class="num" style="color:var(--orange)">' + (r.at_risk    ? fmtD(r.at_risk)    : '<span style="color:var(--dim)">—</span>') + '</td>' +
+      '<td class="num" style="color:var(--teal)">'  + (r.early_close? fmtD(r.early_close): '<span style="color:var(--dim)">—</span>') + '</td>' +
+      '<td class="mono">' + (r.deal_count || '—') + '</td>' +
+      '<td class="num">' + (r.quota ? fmtD(r.quota) : '—') + '</td>' +
+      '<td class="mono" style="font-weight:700;color:' + cc + '">' + cov.toFixed(1) + 'x</td>' +
+      '</tr>';
+  }).join('');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

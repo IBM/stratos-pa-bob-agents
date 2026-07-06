@@ -34,7 +34,7 @@ app.use(express.json());
 // ── Simple API-key auth (skip for public pages) ───────────────────────────────
 const PUBLIC_PATHS = ['/health', '/', '/docs', '/demo', '/api-spec'];
 app.use((req, res, next) => {
-  if (PUBLIC_PATHS.some(p => req.path === p || req.path.startsWith('/docs/') || req.path.startsWith('/docs-assets/'))) {
+  if (PUBLIC_PATHS.some(p => req.path === p || req.path.startsWith('/docs') || req.path.startsWith('/docs-assets/'))) {
     return next();
   }
   const key = req.headers['x-api-key'] || req.query.api_key;
@@ -81,24 +81,24 @@ app.get('/api-spec', (req, res) => {
   res.json(require('./openapi.json'));
 });
 
-// ── Swagger UI at /docs ───────────────────────────────────────────────────────
+// ── Swagger UI at /docs and /docs/ ───────────────────────────────────────────
 const swaggerUiPath = swaggerUi.getAbsoluteFSPath();
 
-// Custom HTML FIRST — must be before static middleware
-app.get('/docs', (req, res) => res.redirect('/docs/'));
-app.get('/docs/', (req, res) => {
+// Serve the Swagger HTML inline — both /docs and /docs/ without any redirect
+// (a redirect causes a loop because express.static catches /docs/ before this handler)
+function serveSwaggerHtml(req, res) {
   res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FP&amp;A Mock API — Docs</title>
+  <title>SalesLens — API Docs</title>
   <link rel="stylesheet" href="/docs-assets/swagger-ui.css">
   <style>
     body { margin: 0; }
     .topbar { background: #161616 !important; }
     .topbar-wrapper img { display: none; }
     .topbar-wrapper::before {
-      content: '🏦  SalesLens — FP&A External Systems';
+      content: 'SalesLens — FP&A External Systems API';
       color: #fff; font-size: 17px; font-weight: 700; padding-left: 16px;
     }
     .swagger-ui .info .title { color: #0f62fe; }
@@ -110,7 +110,7 @@ app.get('/docs/', (req, res) => {
   <script src="/docs-assets/swagger-ui-bundle.js"></script>
   <script src="/docs-assets/swagger-ui-standalone-preset.js"></script>
   <script>
-    window.onload = () => {
+    window.onload = function() {
       SwaggerUIBundle({
         url: '/api-spec',
         dom_id: '#swagger-ui',
@@ -119,7 +119,7 @@ app.get('/docs/', (req, res) => {
         deepLinking: true,
         defaultModelsExpandDepth: 1,
         tryItOutEnabled: true,
-        requestInterceptor: (req) => {
+        requestInterceptor: function(req) {
           req.headers['X-Api-Key'] = 'workshop-demo-key';
           return req;
         }
@@ -128,7 +128,10 @@ app.get('/docs/', (req, res) => {
   </script>
 </body>
 </html>`);
-});
+}
+
+app.get('/docs',  serveSwaggerHtml);
+app.get('/docs/', serveSwaggerHtml);
 
 // Static swagger assets served under /docs-assets (never conflicts with HTML routes)
 app.use('/docs-assets', express.static(swaggerUiPath));

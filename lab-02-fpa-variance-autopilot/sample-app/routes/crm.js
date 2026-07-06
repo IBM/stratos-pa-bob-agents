@@ -73,11 +73,36 @@ router.delete('/deals/:deal_id', (req, res) => {
 });
 
 // ── GET /crm/pipeline-summary ─────────────────────────────────────────────────
+// Without filters → returns all departments × all periods as a flat array
+// With dept_id only → returns all periods for that dept
+// With dept_id + period → returns single period snapshot (original behaviour)
 router.get('/pipeline-summary', (req, res) => {
   const { dept_id, period } = req.query;
-  if (!dept_id || !period) return res.status(400).json({ error: 'dept_id and period are required' });
+
+  // No filters — return everything as a flat array
+  if (!dept_id && !period) {
+    const all = [];
+    Object.entries(store.pipelineSummary).forEach(([dept, periods]) => {
+      Object.entries(periods).forEach(([p, data]) => {
+        all.push({ dept_id: dept, period: p, ...data });
+      });
+    });
+    all.sort((a, b) => a.dept_id.localeCompare(b.dept_id) || a.period.localeCompare(b.period));
+    return res.json({ count: all.length, pipeline: all });
+  }
+
   const deptData = store.pipelineSummary[dept_id];
   if (!deptData) return res.status(404).json({ error: 'No data for dept', available: Object.keys(store.pipelineSummary) });
+
+  // dept only — return all periods for that dept
+  if (!period) {
+    const rows = Object.entries(deptData)
+      .map(([p, data]) => ({ dept_id, period: p, ...data }))
+      .sort((a, b) => a.period.localeCompare(b.period));
+    return res.json({ dept_id, count: rows.length, pipeline: rows });
+  }
+
+  // dept + period — single snapshot
   const periodData = deptData[period];
   if (!periodData) return res.status(404).json({ error: 'No data for period', available: Object.keys(deptData) });
   res.json({ dept_id, period, ...periodData });
