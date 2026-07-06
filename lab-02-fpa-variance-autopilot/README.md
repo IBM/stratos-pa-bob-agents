@@ -1,22 +1,21 @@
 # Lab 2 — FP&A Variance Autopilot
 
-**Duration:** 60 minutes
-**Tools:** watsonx Orchestrate + IBM Planning Analytics + IBM Bob
+**Duration:** 90 minutes  
+**Tools:** watsonx Orchestrate · IBM Planning Analytics · SalesLens Mock API  
 **Prerequisite:** [Lab 0](../lab-00-setup/README.md) ✅ and [Lab 1](../lab-01-bob-planning-analytics-mcp/README.md) ✅ completed
 
 ---
 
 ## Overview
 
-Your FP&A team currently spends **3–4 days each month** manually investigating budget variances across dozens of cost centres. They cross-reference Planning Analytics data, CRM pipeline reports, and ERP metrics — and by the time root causes are identified, the window for corrective action has often closed.
+Your FP&A team currently spends **3–4 days each month** manually investigating budget variances across dozens of cost centres — cross-referencing Planning Analytics data with CRM pipeline reports and ERP operational data. By the time root causes are identified, the window for corrective action has often closed.
 
-**In this lab, you will build and run an AI agent** — the **FP&A Variance Autopilot** — that:
+**In this lab you will build the FP&A Variance Autopilot** — a watsonx Orchestrate agent that:
 
-1. **Detects** material budget variances (>$100K or >20%) the moment actuals land in Planning Analytics
-2. **Investigates** root causes by querying CRM and ERP systems for business context
-3. **Generates** a clear, plain-language explanation for each variance
-4. **Writes back** the explanation to Planning Analytics as a cell annotation
-5. **Routes alerts** to the right stakeholders based on severity
+1. **Detects** material budget variances in Planning Analytics (>$100K or >20%)
+2. **Calls the SalesLens CRM/ERP API** to enrich each variance with real business context
+3. **Generates** a plain-language CFO-ready explanation for every variance
+4. **Routes alerts** to the right stakeholders based on severity
 
 Time to complete the same workflow: **under 5 minutes**.
 
@@ -26,404 +25,670 @@ Time to complete the same workflow: **under 5 minutes**.
 
 | Exercise | Task | Time |
 |----------|------|------|
-| [Exercise 1](#exercise-1--explore-the-fpa-dataset-in-planning-analytics) | Explore the FPA dataset in Planning Analytics | 10 min |
-| [Exercise 2](#exercise-2--detect-material-variances-with-bob) | Detect material variances using Bob | 10 min |
-| [Exercise 3](#exercise-3--build-the-fpa-variance-autopilot-agent) | Build the FP&A Variance Autopilot in Orchestrate | 15 min |
+| [Exercise 1](#exercise-1--quick-catch-up-on-the-fpa-dataset) | Quick catch-up — confirm data from Lab 1 | 10 min |
+| [Exercise 2](#exercise-2--connect-planning-analytics-mcp-to-orchestrate) | Connect Planning Analytics MCP to Orchestrate | 15 min |
+| [Exercise 3](#exercise-3--create-the-fpa-agent--add-tools) | Create the agent + add MCP & REST API tools | 20 min |
 | [Exercise 4](#exercise-4--run-the-end-to-end-autopilot-flow) | Run the end-to-end autopilot flow | 15 min |
-| [Exercise 5](#exercise-5--review-results-and-write-back) | Review results and PA write-back | 10 min |
+| [Exercise 5](#exercise-5--agentops--evaluation) | AgentOps — trace, evaluate, and improve | 15 min |
+| [Exercise 6](#exercise-6--connect-via-watsonx-orchestrate-adk) | Connect using watsonx Orchestrate ADK | 15 min |
 
 ---
 
-## The Dataset
+## The SalesLens Mock API (External Systems)
 
-The FP&A dataset in this lab is located in `lab-02-fpa-variance-autopilot/assets/`. It models a software company's financial performance across multiple departments and geographies.
+The **SalesLens** app is a live REST API deployed for this workshop. It simulates the CRM and ERP systems your agent will query to explain variances.
 
-### Dimensions
+| System | Base Path | Primary Agent Endpoint | What It Returns |
+|--------|-----------|------------------------|-----------------|
+| CRM | `/crm` | `GET /crm/variance-context` | Slipped deals, pipeline coverage, context summary |
+| ERP | `/erp` | `GET /erp/cost-context` | Unbudgeted POs, headcount events, cost context summary |
 
-| File | Dimension | Description |
-|------|-----------|-------------|
-| `dim_account.csv` | Account | Revenue, COGS, OPEX accounts with GL codes |
-| `dim_department.csv` | Department | Sales regions, Engineering, Services, G&A |
-| `dim_scenario.csv` | Scenario | Budget, Actual, Forecast, Prior Year |
-| `dim_time.csv` | Time | Monthly periods Jan 2023 – Jun 2026 |
-| `dim_version.csv` | Version | V1 (Actuals), V2 (Budget), V4 (Forecast) |
+**API Key:** `workshop-demo-key` (header: `X-Api-Key`)  
+**Demo UI:** `<YOUR_APP_URL>/demo` — Variance Lookup, Deals, POs, Headcount  
+**Swagger:** `<YOUR_APP_URL>/docs` — try every endpoint live  
+**OpenAPI spec:** `<YOUR_APP_URL>/api-spec` — used to import into Orchestrate
 
-### Fact Data Highlights
-
-The `fact_financial_data.csv` contains real-world-style variance scenarios including:
-
-| Period | Department | Account | Variance | Story |
-|--------|-----------|---------|---------|-------|
-| Jan 2024 | NA Sales | Enterprise Software Revenue | -$175K (-35%) | 2 deals slipped to February |
-| Jan 2024 | EMEA Sales | Enterprise Software Revenue | +$40K (+10.5%) | Unexpected enterprise deal closed early |
-| Jan 2024 | NA Sales | Sales & Marketing OpEx | +$25K (+20.8%) | Unplanned trade show + new headcount |
-| Jan 2024 | Professional Services | COGS | +$7K (+9.3%) | Contractor cost premium |
-| Mar 2024 | APAC Sales | Enterprise Software Revenue | -$85K (-30.4%) | Regulatory approval delay in China |
-| May 2024 | EMEA Sales | Enterprise Software Revenue | -$35K (-8.3%) | UK market uncertainty |
-| Mar 2025 | Product Engineering | R&D OpEx | +$45K (+8.7%) | AI/ML platform acceleration |
+> Your facilitator will provide the deployed app URL. For local testing: `http://localhost:8080`
 
 ---
 
-## Exercise 1 — Explore the FPA Dataset in Planning Analytics
+## Exercise 1 — Quick Catch-up on the FPA Dataset
 
-**Goal:** Familiarise yourself with the FP&A cube structure before running the autopilot.
+> **If you completed Lab 1 Exercise 5**, the `FPA_Variance` cube is already loaded on your TechZone server — run Step 1.2 to confirm and move on. **Total time: 5 minutes.**
 
-> **Note:** If you completed Exercise 5 in Lab 1, the `FPA_Variance` cube is already loaded. If not, ask your facilitator — the cube may be pre-loaded on the TechZone server.
-
-### Step 1.1 — Confirm Cube Exists
+### Step 1.1 — Confirm the Cube Exists
 
 In Bob (Planning Analytics mode), send:
 
 ```
-List available cubes on the DemoGuide server and show me the structure
-of the FPA_Variance cube including its dimensions
+List available cubes on the DemoGuide server.
+Show me the dimensions of the FPA_Variance cube.
 ```
 
-**Expected output:** The `FPA_Variance` cube with dimensions: Account, Department, Scenario, Time, Version.
+**Expected:** `FPA_Variance` cube with dimensions: Account, Department, Scenario, Time, Version.
+
+> If the cube is not present, ask your facilitator — it can be pre-loaded, or re-run Lab 1 Exercise 5 in 8 minutes.
 
 ---
 
-### Step 1.2 — View the January 2024 Data
+### Step 1.2 — Spot-Check the Variance Data
 
 ```
-Show me January 2024 actual vs budget revenue for all departments in the FPA_Variance cube
+Show me January 2024 actual vs budget for all departments in FPA_Variance.
+Flag any variance greater than $100,000 or 20%.
 ```
 
-Review the results. You should see the NA Sales under-performance and EMEA Sales over-performance reflected in the data.
+You should see the key variances this lab is built around:
+
+| Department | Account | Budget | Actual | Variance |
+|-----------|---------|--------|--------|---------|
+| NA Sales | Enterprise Software Revenue | $500K | $325K | **-$175K (-35%) 🔴** |
+| NA Sales | Sales & Marketing OpEx | $120K | $145K | **+$25K (+20.8%) 🟡** |
+| EMEA Sales | Enterprise Software Revenue | $380K | $420K | +$40K (+10.5%) ✅ |
+
+These are the variances the autopilot will investigate in Exercises 3–4.
 
 ---
 
-### Step 1.3 — Get a Full Q1 2024 Picture
+## Exercise 2 — Connect Planning Analytics MCP to Orchestrate
 
-```
-Show me Q1 2024 revenue variance across all departments — Budget vs Actual.
-Flag any variance greater than $50,000 or 10%.
-```
+**Goal:** Register the Planning Analytics MCP server as a tool source in watsonx Orchestrate so your agent can query TM1 directly.
 
-Make a note of the material variances you see. These are the variances the autopilot will be investigating in Exercises 3 and 4.
+### Step 2.1 — Open Orchestrate and Navigate to Integrations
 
----
-
-## Exercise 2 — Detect Material Variances with Bob
-
-**Goal:** Use Bob directly to run the variance detection logic that the autopilot will automate.
-
-### Step 2.1 — Run the Variance Detection Prompt
-
-```
-Analyse the FPA_Variance cube for January 2024.
-Identify all material variances — defined as greater than $100,000 or greater than 20%
-in absolute terms across all accounts and departments.
-Present findings as a prioritised list with: account, department, budget, actual,
-variance amount, variance %, and severity (High/Medium/Low).
-```
-
-Bob returns a structured list. The January 2024 data should surface:
-
-- 🔴 **High:** NA Sales Enterprise Software Revenue — -$175K (-35%)
-- 🟡 **Medium:** NA Sales Sales & Marketing OpEx — +$25K (+20.8%)
+1. Log in to your **watsonx Orchestrate** tenant.
+2. In the left navigation, click **Integrations** (or **Tools** → **Connections** depending on your version).
+3. Click **Add integration** → **MCP Server**.
 
 ---
 
-### Step 2.2 — Investigate One Variance
+### Step 2.2 — Enter the MCP Connection Details
 
-Pick the largest variance (NA Sales Revenue) and ask:
+| Field | Value |
+|-------|-------|
+| **Name** | `planning-analytics-mcp` |
+| **MCP Server URL** | `http://<TECHZONE_HOST>:<PORT>/api/<TENANT_ID>/v0/agentic-ai/cube/mcp` |
+| **Transport** | `streamable-http` (or `sse` if your version requires) |
+| **Authentication** | Basic Auth — Base64 encoded `user:password` |
+| **Authorization Header** | `Authorization: Basic <base64>` |
 
-```
-For the NA Sales Enterprise Software Revenue variance of -$175K in January 2024,
-what explanation is recorded in the data? What would you recommend investigating
-in a CRM or ERP system to understand the root cause?
-```
+> Your facilitator will provide the exact MCP URL and credentials for the TechZone server.
 
-**Expected output:** Bob reads the `variance_explanation` field from the fact data and supplements it with investigation recommendations:
-> *"Enterprise Software missed budget by $175K (-35%) in Jan 2024. Root cause recorded: 2 deals totaling $200K slipped to February due to customer procurement delays and budget freeze. Recommended: Verify in CRM whether Acme Corp ($120K) and TechStart ($80K) are rescheduled for February close."*
-
----
-
-### Step 2.3 — Generate an AI Explanation
-
-```
-Generate a concise, CFO-ready explanation for the January 2024 NA Sales
-revenue variance that could be used as a Planning Analytics cell annotation.
-Keep it under 3 sentences.
-```
-
-**Example output Bob generates:**
-> *"Enterprise Software Revenue missed January budget by $175K (35%) due to two significant deal slippages — Acme Corp ($120K) delayed by procurement process and TechStart ($80K) impacted by customer budget freeze. Both opportunities remain in pipeline with high close probability and are expected to convert in February. No forecast adjustment required; this is a timing-related variance."*
-
-This is exactly the kind of explanation the autopilot will generate automatically.
+Click **Test connection** → you should see a green tick and a list of available tools.
 
 ---
 
-## Exercise 3 — Build the FP&A Variance Autopilot Agent
+### Step 2.3 — Verify Tools Are Available
 
-**Goal:** Configure the FP&A Variance Autopilot in **watsonx Orchestrate** using the pre-built agent YAML definition.
+After connecting, Orchestrate will discover all tools exposed by the MCP server. Confirm these are present:
 
-### Step 3.1 — Open watsonx Orchestrate
+```
+get_available_tm1_servers
+list_cubes_with_ai_analysis_metadata
+get_cube_dimensions
+get_data_from_data_explorer
+execute_mdx_and_get_view
+perform_outlier_detection
+get_outlier_summary
+```
 
-1. Navigate to your watsonx Orchestrate tenant in the browser.
-2. In the left navigation, select **Agents**.
-3. Click **Create agent** (or **Import agent** if that option is available in your tenant).
+> **Tip:** Click any tool to see its input/output schema — this is what the agent sees when it decides which tool to call.
 
 ---
 
-### Step 3.2 — Import the Agent YAML
+### Step 2.4 — Add the SalesLens REST API as a Tool Source
 
-The agent definition is provided in `assets/fpa-variance-agent.yaml`. This file defines:
+Now register the CRM/ERP mock API the same way — using its OpenAPI spec.
 
-- **Agent name and description** — FP&A Variance Autopilot
-- **Instructions** — the agent's persona, reasoning steps, and response format
-- **Tools** — the Planning Analytics MCP tools the agent is authorised to use
-- **Output format** — structured variance report with confidence score
+1. Click **Add integration** → **REST API / OpenAPI**.
+2. Fill in:
 
-**Import steps:**
+| Field | Value |
+|-------|-------|
+| **Name** | `saleslens-fpa-api` |
+| **OpenAPI spec URL** | `<YOUR_APP_URL>/api-spec` |
+| **Authentication type** | API Key |
+| **Header name** | `X-Api-Key` |
+| **API Key value** | `workshop-demo-key` |
 
-1. Click **Import from YAML** in Orchestrate (or copy the YAML content into the agent editor).
+3. Click **Import** — Orchestrate reads the spec and creates individual tools for every endpoint.
+
+**Confirm these tools were created:**
+
+| Tool name (from spec) | Endpoint |
+|-----------------------|----------|
+| `getCrmVarianceContext` | `GET /crm/variance-context` |
+| `getCrmDeals` | `GET /crm/deals` |
+| `getCrmPipelineSummary` | `GET /crm/pipeline-summary` |
+| `getErpCostContext` | `GET /erp/cost-context` |
+| `getErpPurchaseOrders` | `GET /erp/purchase-orders` |
+| `getErpHeadcountEvents` | `GET /erp/headcount-events` |
+
+> **What just happened:** Orchestrate parsed the OpenAPI spec from `<YOUR_APP_URL>/api-spec`, auto-generated tool schemas from each path, and wired the API key credential. The agent can now call CRM and ERP endpoints exactly like it calls PA MCP tools.
+
+---
+
+### Step 2.5 — Try a Tool Call Manually
+
+Before wiring tools to an agent, test the connection directly from the Tools panel:
+
+1. Click on `getCrmVarianceContext`.
+2. In the **Try it** panel, enter:
+   - `dept_id`: `DEPT-NA-SALES`
+   - `period`: `2024-01`
+3. Click **Run**.
+
+**Expected response:**
+```json
+{
+  "context_summary": "2 deal(s) totalling $200K slipped: Acme Corp ($120K), TechStart Inc ($80K)...",
+  "total_slipped_value": 200000,
+  "slipped_deals": [ ... ]
+}
+```
+
+The `context_summary` field is the ready-made root cause narrative the agent will embed directly in its variance report.
+
+---
+
+## Exercise 3 — Create the FP&A Agent & Add Tools
+
+**Goal:** Build the FP&A Variance Autopilot agent, wire it to both the PA MCP tools and the SalesLens API tools, and configure its instructions.
+
+### Step 3.1 — Create the Agent
+
+1. In Orchestrate, navigate to **Agents** → **Create agent**.
+2. Fill in:
+
+| Field | Value |
+|-------|-------|
+| **Name** | `FP&A Variance Autopilot` |
+| **Description** | Detects material budget variances in Planning Analytics, queries CRM and ERP for root cause context, generates CFO-ready explanations and stakeholder alerts |
+| **Model** | `ibm/granite-3-3-8b-instruct` (or your tenant default) |
+
+---
+
+### Step 3.2 — Import Instructions from YAML
+
+Rather than typing instructions manually, import from the pre-built agent definition:
+
+1. Click **Import from YAML** (or **Advanced** → **YAML editor**).
 2. Open `lab-02-fpa-variance-autopilot/assets/fpa-variance-agent.yaml` from this repository.
-3. Paste the full YAML content.
-4. Click **Save** or **Create**.
+3. Paste the full YAML content and click **Apply** or **Save**.
 
-> **Note:** If your Orchestrate tenant does not support YAML import, your facilitator will guide you through creating the agent manually using the form-based editor. The key fields are documented in [Appendix A](#appendix-a--agent-configuration-reference).
+> The YAML contains the complete agent persona, reasoning chain, variance thresholds, root cause logic, alert routing rules, and response format.
 
----
+**Key instruction sections to review after import:**
 
-### Step 3.3 — Connect the Planning Analytics MCP Tools
-
-1. In the agent's **Tools** section, add the Planning Analytics MCP connection.
-2. Enter the MCP server URL: `http://<TECHZONE_HOST>:<PORT>/api/<YOUR_TENANT_ID>/v0/agentic-ai/cube/mcp`
-3. Add the Authorization header using your Base64 credentials.
-4. Enable the following tools:
-   - `get_available_tm1_servers`
-   - `list_cubes_with_ai_analysis_metadata`
-   - `get_cube_dimensions`
-   - `get_cube_sample_members`
-   - `get_data_from_data_explorer`
-   - `execute_mdx_and_get_view`
-   - `perform_outlier_detection`
-   - `get_outlier_summary`
-
-5. Click **Save**.
-
----
-
-### Step 3.4 — Review the Agent Instructions
-
-Before running the agent, review the core instructions in the YAML. Key sections:
-
-**Variance Detection Logic:**
 ```
 Material variance thresholds:
-  - Revenue: > $100,000 or > 20% (unfavourable = actual < budget)
-  - OpEx: > $50,000 or > 15% (unfavourable = actual > budget)
+  Revenue (REV-*):  > $100,000 or > 20%
+  OpEx (OPEX-*):    > $50,000  or > 15%
 
-Severity classification:
-  - HIGH: > 25% or > $150,000
-  - MEDIUM: 15–25% or $75,000–$150,000
-  - LOW: 10–15% or $25,000–$75,000
+Root cause logic:
+  Revenue variance → call getCrmVarianceContext → embed context_summary
+  OpEx variance    → call getErpCostContext     → embed context_summary
+
+Severity routing:
+  HIGH   → Regional VP (email, immediate)
+  MEDIUM → FP&A Manager (dashboard)
+  LOW    → FP&A team (monthly digest)
 ```
 
-**Root Cause Investigation Steps:**
+---
+
+### Step 3.3 — Add Planning Analytics MCP Tools
+
+1. In the agent editor, go to the **Tools** tab.
+2. Click **Add tools** → select **From integration** → pick `planning-analytics-mcp`.
+3. Enable these specific tools:
+
 ```
-1. Query Planning Analytics for variance data
-2. Check variance_explanation field in cube data
-3. Cross-reference with CRM for deal slippage context
-4. Cross-reference with ERP for operational cost context
-5. Generate plain-language explanation
-6. Assign confidence score (0.0 – 1.0)
+✅ get_available_tm1_servers
+✅ list_cubes_with_ai_analysis_metadata
+✅ get_cube_dimensions
+✅ get_cube_sample_members
+✅ get_data_from_data_explorer
+✅ execute_mdx_and_get_view
+✅ lookup_potential_members
+✅ perform_outlier_detection
+✅ get_outlier_summary
 ```
+
+4. Click **Save**.
+
+---
+
+### Step 3.4 — Add SalesLens CRM/ERP Tools
+
+1. Still in the **Tools** tab, click **Add tools** → **From integration** → pick `saleslens-fpa-api`.
+2. Enable these tools:
+
+```
+✅ getCrmVarianceContext      ← primary revenue root cause
+✅ getCrmDeals
+✅ getCrmPipelineSummary
+✅ getErpCostContext          ← primary opex root cause
+✅ getErpPurchaseOrders
+✅ getErpHeadcountEvents
+```
+
+3. Click **Save**.
+
+**Your agent now has tools across two systems:**
+```
+┌─────────────────────────────────────┐
+│     FP&A Variance Autopilot         │
+│                                     │
+│  Planning Analytics MCP  (9 tools)  │  ← TM1 data
+│  SalesLens REST API      (6 tools)  │  ← CRM + ERP context
+└─────────────────────────────────────┘
+```
+
+---
+
+### Step 3.5 — Preview the Tool Schema
+
+Click `getCrmVarianceContext` in the tools list. Notice how Orchestrate surfaced the tool from the OpenAPI spec:
+
+| Property | Value |
+|----------|-------|
+| **operationId** | `getCrmVarianceContext` |
+| **Description** | *"Returns slipped deals and pipeline context..."* |
+| **Parameters** | `dept_id` (required), `period` (required), `account_id` (optional) |
+| **Response** | `context_summary`, `slipped_deals[]`, `pipeline_summary` |
+
+> **Discussion:** The agent uses the `description` field to decide *when* to call this tool. Good API descriptions directly improve agent reasoning quality — this is why the OpenAPI spec documentation matters.
 
 ---
 
 ## Exercise 4 — Run the End-to-End Autopilot Flow
 
-**Goal:** Trigger the FP&A Variance Autopilot and observe the complete automated analysis.
+**Goal:** Trigger the agent and observe it orchestrating PA MCP + SalesLens API calls to produce a variance report.
 
-### Step 4.1 — Trigger the Autopilot
+### Step 4.1 — Open the Agent Chat
 
-In the Orchestrate agent chat, send the following prompt:
+In the agent editor, click **Preview** or **Test agent**. You will see the Orchestrate agent chat interface.
+
+---
+
+### Step 4.2 — Trigger the Autopilot
+
+Send this prompt:
 
 ```
 Run the FP&A variance analysis for January 2024 on the FPA_Variance cube
 on the DemoGuide server. Identify all material variances, investigate root
-causes, and generate a full variance report with explanations.
+causes using the CRM and ERP systems, and generate a full variance report.
 ```
 
-**Watch the agent work:** In the Orchestrate interface you can observe the tool call sequence:
-1. `get_available_tm1_servers` — identifies the server
-2. `list_cubes_with_ai_analysis_metadata` — checks pre-analysis status
-3. `get_cube_dimensions` — maps the cube structure
-4. `get_data_from_data_explorer` or `execute_mdx_and_get_view` — retrieves variance data
-5. Analysis and explanation generation
-6. Output formatting
+**Watch the tool call trace** in the Orchestrate UI (visible in the side panel or logs):
+
+```
+Step 1 → get_available_tm1_servers
+Step 2 → list_cubes_with_ai_analysis_metadata
+Step 3 → get_cube_dimensions
+Step 4 → get_data_from_data_explorer   (or execute_mdx_and_get_view)
+Step 5 → getCrmVarianceContext          dept_id=DEPT-NA-SALES, period=2024-01
+Step 6 → getErpCostContext              dept_id=DEPT-NA-SALES, period=2024-01
+Step 7 → [synthesise report]
+```
+
+This is the agent autonomously deciding which tool to call, in which order, based on what it discovers — not a scripted workflow.
 
 ---
 
-### Step 4.2 — Review the Output
+### Step 4.3 — Review the Output
 
-The autopilot should produce a structured report similar to:
+The agent should produce a structured report:
 
 ```
 📊 FP&A Variance Analysis — January 2024
 
 Server: DemoGuide | Cube: FPA_Variance | Period: 2024-01
-Analysis completed in: 4.2 seconds
 
 MATERIAL VARIANCES DETECTED: 2
 
-─────────────────────────────────────────────────────────────
-🔴 HIGH SEVERITY — NA Sales | Enterprise Software Revenue
-─────────────────────────────────────────────────────────────
-  Budget:    $500,000
-  Actual:    $325,000
-  Variance:  -$175,000 (-35.0%)
+─────────────────────────────────────────────────────────
+🔴 HIGH — NA Sales | Enterprise Software Revenue
+─────────────────────────────────────────────────────────
+  Budget: $500,000 | Actual: $325,000
+  Variance: -$175,000 (-35.0%) ← Unfavorable
 
-  Root Cause:
-  Two enterprise deals totaling $200K slipped from January to
-  February. Acme Corp ($120K) delayed by procurement process;
-  TechStart ($80K) impacted by customer budget freeze. Both
-  remain in pipeline with high close probability.
+  Root Cause: Two enterprise deals totalling $200K slipped
+  from January to February. Acme Corp ($120K) delayed by
+  procurement process; TechStart Inc ($80K) impacted by
+  customer budget freeze. Both remain in pipeline with
+  high close probability. [source: CRM /variance-context]
 
-  Classification: Timing-related slippage — no structural issue
-  CRM Action Required: Confirm February close dates
-  Forecast Adjustment: None recommended
+  Classification: Timing-related slippage
+  Forecast Action: None required — deals expected Feb
+  CRM Action: Confirm close dates for Acme + TechStart
 
-─────────────────────────────────────────────────────────────
-🟡 MEDIUM SEVERITY — NA Sales | Sales & Marketing OpEx
-─────────────────────────────────────────────────────────────
-  Budget:    $120,000
-  Actual:    $145,000
-  Variance:  +$25,000 (+20.8%)
+─────────────────────────────────────────────────────────
+🟡 MEDIUM — NA Sales | Sales & Marketing OpEx
+─────────────────────────────────────────────────────────
+  Budget: $120,000 | Actual: $145,000
+  Variance: +$25,000 (+20.8%) ← Unfavorable
 
-  Root Cause:
-  Unplanned trade show participation ($18K) and additional
-  headcount hired in December carrying into January. Trade
-  show was reactive to competitive activity.
+  Root Cause: Unplanned trade show ($18K unbudgeted PO,
+  vendor: TechWorld Events) + December new hire carrying
+  into January ($8.5K/mo). [source: ERP /cost-context]
 
-  Classification: Controllable overspend — review required
-  Action Required: Assess trade show ROI; validate HC plan
-  Forecast Adjustment: Consider +$15K Q1 OpEx adjustment
+  Classification: Controllable overspend
+  Forecast Action: +$15K Q1 OpEx adjustment recommended
 
-─────────────────────────────────────────────────────────────
+─────────────────────────────────────────────────────────
+✅ FAVORABLE — EMEA Sales | Enterprise Software Revenue
+  +$40,000 (+10.5%) — Early close of GlobalTech deal.
 
-POSITIVE VARIANCE NOTED (No Action Required):
-✅ EMEA Sales — Enterprise Software Revenue: +$40K (+10.5%)
-   Early close of GlobalTech deal — pipeline execution.
-
-─────────────────────────────────────────────────────────────
+─────────────────────────────────────────────────────────
 SUMMARY
-  Total Revenue Variance:   -$135,000 (-8.8% vs budget)
-  Total OpEx Variance:      +$25,000  (+7.5% vs budget)
-  Material Variances:       2 (1 High, 1 Medium)
-  Variances with Explanation: 100%
+  Revenue Variance (Net):  -$135,000 (-8.8% vs budget)
+  OpEx Variance (Net):     +$25,000  (+7.5% vs budget)
+  Material Variances: 2 (1 High, 1 Medium)
+  Coverage: 100% of material variances explained
 
 RECOMMENDED ACTIONS:
-  1. [HIGH] Confirm February close for Acme Corp + TechStart
-  2. [MEDIUM] Review NA Sales OpEx run-rate vs budget
+  1. [HIGH] Confirm Feb close — Acme Corp + TechStart
+  2. [MEDIUM] Review NA Sales OpEx run-rate vs Q1 plan
   3. [LOW] Document EMEA early close in pipeline report
 
-Confidence: 0.91 | Alerts: VP Sales (email), FP&A Mgr (dashboard)
+Confidence: 0.92 | Alerts: VP Sales (email), FP&A Mgr (dashboard)
 ```
 
 ---
 
-### Step 4.3 — Run for a Different Period
+### Step 4.4 — Run the SalesLens UI Side-by-Side
 
-Try the autopilot on another period from the dataset:
+Open `<YOUR_APP_URL>/demo` in a browser tab. Go to **Variance Lookup** and enter the same parameters:
 
-```
-Run the variance analysis for March 2024 on the FPA_Variance cube.
-Focus on any APAC Sales variances and provide root cause analysis.
-```
+- **Department:** `DEPT-NA-SALES`
+- **Period:** `2024-01`
 
-The March 2024 data shows a -$85K APAC variance due to a regulatory approval delay in China. The agent should surface and explain this.
+Click **Fetch context**. You will see exactly the same `context_summary` strings the agent used — this is what the Orchestrate agent called under the hood via `getCrmVarianceContext` and `getErpCostContext`.
 
----
-
-## Exercise 5 — Review Results and Write-Back
-
-**Goal:** Understand how the autopilot outputs feed back into Planning Analytics and how stakeholder alerts are structured.
-
-### Step 5.1 — Simulate a PA Write-Back
-
-In the Orchestrate agent, ask:
-
-```
-Take the variance explanation generated for NA Sales Enterprise Software Revenue
-in January 2024 and format it as a Planning Analytics cell annotation.
-What TurboIntegrator process would be needed to write this back to the cube?
-```
-
-The agent will provide:
-1. The formatted annotation string (under 500 characters)
-2. A TurboIntegrator code snippet using `CellPutS` that writes the explanation to the appropriate cell intersection
-
-> **Production note:** In a live implementation, the agent would call the TurboIntegrator MCP tools (`create_tm1_process`, `update_tm1_process`, `execute_tm1_processes_asynchronously`) to write the annotation directly — no manual step required.
+> **Key insight for participants:** The agent is not hallucinating root causes — it is reading them directly from a live REST API. This is the pattern for any real implementation: your CRM (Salesforce, HubSpot) or ERP (SAP, Oracle) exposes an endpoint; the agent calls it.
 
 ---
 
-### Step 5.2 — Review the Alert Routing Logic
-
-Ask:
+### Step 4.5 — Try Another Period
 
 ```
-Based on the January 2024 variance report, which stakeholders should receive
-alerts and what information should each alert contain?
-Show me the alert content for each stakeholder type.
+Run the variance analysis for March 2024. Focus on APAC Sales variances.
+```
+
+March 2024 surfaces a -$85K APAC variance (regulatory approval delay in China). The agent calls `getCrmVarianceContext?dept_id=DEPT-APAC-SALES&period=2024-03` and returns the correct root cause.
+
+---
+
+## Exercise 5 — AgentOps: Evaluation & Tracing
+
+**Goal:** Use Orchestrate's built-in AgentOps capabilities to trace agent execution, evaluate output quality, and understand how to improve agent behaviour.
+
+### Step 5.1 — View the Execution Trace
+
+After running the autopilot in Exercise 4:
+
+1. In Orchestrate, navigate to **AgentOps** → **Traces** (or **Logs** → **Agent runs**).
+2. Find your most recent run and click into it.
+
+You will see the full execution trace:
+
+```
+Run ID: run-a3f9...
+Start: 14:23:01  |  End: 14:23:07  |  Duration: 6.1s
+
+┌─ Reasoning step 1 ──────────────────────────────────────┐
+│ Input: "Run FP&A variance analysis for January 2024..."  │
+│ Decision: Need to identify available TM1 servers first   │
+│ Tool called: get_available_tm1_servers                   │
+│ Result: ["DemoGuide"]                                    │
+└──────────────────────────────────────────────────────────┘
+┌─ Reasoning step 2 ──────────────────────────────────────┐
+│ Decision: Check if FPA_Variance is pre-analyzed          │
+│ Tool called: list_cubes_with_ai_analysis_metadata        │
+│ Result: FPA_Variance is_analyzed: true                   │
+└──────────────────────────────────────────────────────────┘
+... (continue through all steps)
+```
+
+**What to observe:**
+- How many reasoning steps did the agent take?
+- Which tools were called and in what order?
+- Where did the agent use PA MCP vs SalesLens API?
+- Token usage per step
+
+---
+
+### Step 5.2 — Evaluate Output Quality
+
+Orchestrate AgentOps includes built-in evaluation metrics. Navigate to **AgentOps** → **Evaluations** and review:
+
+| Metric | What It Measures | Target |
+|--------|-----------------|--------|
+| **Faithfulness** | Are the root causes grounded in actual tool responses? | > 0.85 |
+| **Completeness** | Were all material variances addressed? | 1.0 |
+| **Tool precision** | Did the agent call the right tool at the right time? | > 0.90 |
+| **Response format** | Did the output follow the defined structure? | Pass |
+
+> **Discussion:** If faithfulness scores low, the agent may be embellishing beyond what the API returned. Review the agent instructions — add `"Only use root cause text directly from context_summary. Do not infer."` to constrain this.
+
+---
+
+### Step 5.3 — Run a Comparison Evaluation
+
+Orchestrate allows you to test the same prompt against two agent configurations side-by-side:
+
+1. Navigate to **AgentOps** → **Comparisons**.
+2. Create a comparison:
+   - **Agent A:** Current agent (with both PA MCP + SalesLens tools)
+   - **Agent B:** Same agent with SalesLens tools **disabled**
+3. Run the same January 2024 prompt against both.
+4. Review: how does root cause quality change when the agent can't query external systems?
+
+**Expected finding:** Agent B falls back to generic explanations or the `variance_explanation` field in the cube data. Agent A references specific deal names, vendor names, and PO amounts — much higher business value.
+
+---
+
+### Step 5.4 — Improve Agent Instructions Based on Trace
+
+Based on your trace review, try one instruction improvement. For example, if the agent skipped the ERP check on an OpEx variance, add to the instructions:
+
+```
+IMPORTANT: For every material OpEx or COGS variance you must call
+getErpCostContext before generating the explanation. Never skip this step.
+```
+
+Re-run the evaluation and compare the faithfulness score.
+
+---
+
+## Exercise 6 — Connect via watsonx Orchestrate ADK
+
+**Goal:** Use the **watsonx Orchestrate ADK** (Agent Development Kit) to programmatically define tools, connect the SalesLens API, and register the agent — all from code rather than the UI.
+
+### Background: Why ADK?
+
+The ADK is the developer path for:
+- Embedding agent creation in CI/CD pipelines
+- Registering custom tools that aren't exposed via OpenAPI
+- Building multi-agent systems programmatically
+- Testing agents locally before deploying to Orchestrate
+
+---
+
+### Step 6.1 — Install the ADK
+
+```bash
+pip install ibm-watsonx-orchestrate
+```
+
+Verify:
+
+```bash
+orchestrate --version
+```
+
+---
+
+### Step 6.2 — Authenticate
+
+```bash
+orchestrate env add --env-name workshop \
+  --url https://<YOUR_ORCHESTRATE_TENANT>.ai.ibm.com \
+  --api-key <YOUR_API_KEY>
+
+orchestrate env activate workshop
+```
+
+---
+
+### Step 6.3 — Import the SalesLens API as a Toolset
+
+The ADK can import any OpenAPI spec directly as a named toolset:
+
+```bash
+orchestrate tools import \
+  --kind openapi \
+  --spec https://<YOUR_APP_URL>/api-spec \
+  --name saleslens-fpa-api \
+  --app-id saleslens
+```
+
+Set the API key credential:
+
+```bash
+orchestrate credentials add \
+  --app-id saleslens \
+  --header X-Api-Key \
+  --value workshop-demo-key
+```
+
+Verify tools were imported:
+
+```bash
+orchestrate tools list | grep saleslens
 ```
 
 **Expected output:**
-
-| Stakeholder | Channel | Content |
-|-------------|---------|---------|
-| Regional VP Sales | Email — High Priority | Full variance summary, deal names, CRM action required |
-| FP&A Manager | Dashboard update | Variance table, severity flags, recommended forecast adjustment |
-| CFO | Weekly digest | Net variance summary only, severity count |
-| Sales Team | Slack / Teams | Pipeline context for slipped deals |
+```
+saleslens/getCrmVarianceContext
+saleslens/getCrmDeals
+saleslens/getCrmPipelineSummary
+saleslens/getErpCostContext
+saleslens/getErpPurchaseOrders
+saleslens/getErpHeadcountEvents
+```
 
 ---
 
-### Step 5.3 — Discuss: Adapting the Alert Rules
+### Step 6.4 — Import the MCP Server via ADK
 
-Consider how the alert routing logic would need to change for your organisation:
+```bash
+orchestrate tools import \
+  --kind mcp \
+  --url http://<TECHZONE_HOST>:<PORT>/api/<TENANT_ID>/v0/agentic-ai/cube/mcp \
+  --name planning-analytics-mcp \
+  --auth-type basic \
+  --username <USER> \
+  --password <PASSWORD>
+```
 
-- What variance thresholds are meaningful for your business?
-- Which stakeholders need real-time vs daily vs weekly alerts?
-- What external systems (CRM, ERP, HR) hold the root cause context?
-- What format does your CFO prefer for variance commentary?
+---
 
-These are the adaptation questions you will work through in **Lab 3**.
+### Step 6.5 — Deploy the Agent from YAML
+
+The `fpa-variance-agent.yaml` in this repo is already ADK-compatible. Deploy it directly:
+
+```bash
+orchestrate agents import \
+  --file lab-02-fpa-variance-autopilot/assets/fpa-variance-agent.yaml
+```
+
+Verify:
+
+```bash
+orchestrate agents list
+```
+
+**Expected:**
+```
+fpa_variance_autopilot    FP&A Variance Autopilot    active
+```
+
+---
+
+### Step 6.6 — Chat with the Agent via CLI
+
+```bash
+orchestrate agents chat --agent fpa_variance_autopilot
+```
+
+```
+You: Run the variance analysis for January 2024 on FPA_Variance cube.
+
+Agent: 📊 FP&A Variance Analysis — January 2024 ...
+```
+
+---
+
+### Step 6.7 — Call the Agent via REST API
+
+Every Orchestrate agent exposes a REST endpoint. Use this in your own applications:
+
+```bash
+curl -X POST \
+  https://<YOUR_ORCHESTRATE_TENANT>.ai.ibm.com/v1/chat \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "fpa_variance_autopilot",
+    "messages": [{
+      "role": "user",
+      "content": "Run variance analysis for January 2024 on FPA_Variance cube"
+    }]
+  }'
+```
+
+> **Production pattern:** This is how you would trigger the autopilot from a Planning Analytics TurboIntegrator process, a scheduler, or a Power Automate flow — the moment actuals land in TM1, call this endpoint.
 
 ---
 
 ## Architecture: How the Autopilot Works
 
 ```
-                    ┌─────────────────────────────────┐
-                    │      watsonx Orchestrate          │
-                    │   FP&A Variance Autopilot Agent   │
-                    └──────────┬──────────┬────────────┘
-                               │          │
-               ┌───────────────▼──┐    ┌──▼────────────────┐
-               │  Planning         │    │  External Systems  │
-               │  Analytics MCP    │    │  (CRM / ERP)       │
-               │                   │    │                    │
-               │  • FPA_Variance   │    │  • Deal pipeline   │
-               │    cube query     │    │  • Cost data       │
-               │  • Variance data  │    │  • Operational     │
-               │  • PA write-back  │    │    context         │
-               └──────────┬────────┘    └──────────┬─────────┘
-                          │                        │
-                    ┌─────▼────────────────────────▼─────┐
-                    │       AI Explanation Engine          │
-                    │  • Root cause synthesis              │
-                    │  • Confidence scoring                │
-                    │  • Narrative generation              │
-                    └──────────────────┬─────────────────┘
-                                       │
-                    ┌──────────────────▼─────────────────┐
-                    │         Stakeholder Alerts           │
-                    │  Email · Dashboard · Slack · PA Note │
-                    └─────────────────────────────────────┘
+User / Scheduler / TM1 Event
+           │
+           ▼
+  ┌─────────────────────────────────────────┐
+  │        watsonx Orchestrate               │
+  │   FP&A Variance Autopilot Agent          │
+  │                                          │
+  │  ┌──────────────┐  ┌──────────────────┐  │
+  │  │ PA MCP Tools │  │ SalesLens REST   │  │
+  │  │  (9 tools)   │  │  API (6 tools)   │  │
+  │  └──────┬───────┘  └────────┬─────────┘  │
+  └─────────┼───────────────────┼────────────┘
+            │                   │
+            ▼                   ▼
+  ┌──────────────────┐  ┌────────────────────┐
+  │ IBM Planning     │  │  SalesLens Mock     │
+  │ Analytics (TM1)  │  │  ┌─────┐ ┌─────┐  │
+  │                  │  │  │ CRM │ │ ERP │  │
+  │ FPA_Variance     │  │  └─────┘ └─────┘  │
+  │ cube             │  │  /crm/variance-    │
+  │ (Budget/Actual)  │  │  context           │
+  └──────────────────┘  │  /erp/cost-context │
+                        └────────────────────┘
+            │                   │
+            └─────────┬─────────┘
+                      ▼
+           ┌─────────────────────┐
+           │  AI Explanation     │
+           │  + Stakeholder      │
+           │  Alert Routing      │
+           └─────────────────────┘
 ```
 
 ---
@@ -433,66 +698,58 @@ These are the adaptation questions you will work through in **Lab 3**.
 | Metric | Manual Process | With Autopilot |
 |--------|---------------|----------------|
 | Time to investigate variances | 3–4 days | < 5 minutes |
-| Coverage (% of variances explained) | ~60% (resource limited) | 100% |
+| Coverage (% explained) | ~60% | 100% |
 | Stakeholder notification | Day 3–4 of close | Immediate |
-| Audit trail in Planning Analytics | Manual, inconsistent | Automatic, timestamped |
 | CRM/ERP cross-reference | Manual lookup | Automatic |
+| Audit trail in PA | Manual, inconsistent | Automatic, timestamped |
 
 ---
 
 ## Troubleshooting
 
-### Agent returns no variances
+### MCP connection fails in Orchestrate
+Verify the URL format and that Basic Auth credentials are correct. Test the URL directly in a browser — you should see a JSON response from the MCP server.
 
-Confirm the cube name and period. The cube must be named `FPA_Variance` and contain data for the period you request. Ask Bob: `List all cubes on DemoGuide server` to verify.
+### SalesLens API import fails
+Ensure the app is running and the `/api-spec` endpoint returns valid JSON. Open `<YOUR_APP_URL>/api-spec` in a browser to confirm. Check that the API key header is set to `X-Api-Key`.
 
-### Agent cannot connect to Planning Analytics
+### Agent returns no CRM/ERP context
+Check that the `dept_id` and `period` values match exactly what's in the data. Valid dept IDs: `DEPT-NA-SALES`, `DEPT-EMEA-SALES`, `DEPT-APAC-SALES`, `DEPT-LATAM-SALES`. Valid periods: `2024-01` through `2024-06`.
 
-Check that the MCP server URL and credentials in the Orchestrate tool configuration match your Lab 0 MCP configuration exactly.
+### YAML import fails in Orchestrate UI
+Some tenants require the agent to be created manually. Refer to Appendix A for the key fields and use the ADK import path in Exercise 6 as an alternative.
 
-### YAML import fails in Orchestrate
-
-Some Orchestrate tenants require the agent to be created manually. Refer to [Appendix A](#appendix-a--agent-configuration-reference) for the key fields and create the agent using the form editor.
-
-### CRM / ERP systems not available
-
-The lab dataset includes `variance_explanation` fields in `fact_financial_data.csv` that simulate CRM/ERP context. The agent will use these when external systems are not connected. In a production implementation, these would be live API calls.
+### ADK authentication fails
+Ensure your API key has the `Agent Developer` role in the Orchestrate tenant. Run `orchestrate env list` to verify the active environment.
 
 ---
 
 ## Appendix A — Agent Configuration Reference
 
-If creating the agent manually in Orchestrate:
-
 | Field | Value |
 |-------|-------|
-| **Name** | FP&A Variance Autopilot |
-| **Description** | Automatically detects material budget variances in Planning Analytics, investigates root causes, generates explanations, and routes stakeholder alerts |
-| **Model** | `ibm/granite-3-3-8b-instruct` or your tenant default |
-| **Variance threshold — Revenue** | > $100,000 or > 20% |
-| **Variance threshold — OpEx** | > $50,000 or > 15% |
-| **Severity — HIGH** | > 25% or > $150,000 |
-| **Severity — MEDIUM** | 15–25% or $75K–$150K |
-| **Severity — LOW** | 10–15% or $25K–$75K |
-| **Response format** | Structured report: metadata → material variances → summary → recommended actions → confidence |
+| **Name** | `FP&A Variance Autopilot` |
+| **Model** | `ibm/granite-3-3-8b-instruct` |
+| **Revenue threshold** | > $100,000 or > 20% |
+| **OpEx threshold** | > $50,000 or > 15% |
+| **HIGH severity** | > 25% or > $150,000 |
+| **MEDIUM severity** | 15–25% or $75K–$150K |
+| **LOW severity** | 10–15% or $25K–$75K |
+| **PA MCP tools** | 9 (see Exercise 3.3) |
+| **SalesLens tools** | 6 (see Exercise 3.4) |
 
 ---
 
-## Appendix B — Sample MDX for Manual Variance Query
+## Appendix B — SalesLens API Quick Reference
 
-If you need to retrieve variance data directly without the agent:
-
-```mdx
-SELECT
-  {[Scenario].[Scenario].[BUD], [Scenario].[Scenario].[ACT]} ON COLUMNS,
-  {[Department].[Department].MEMBERS} ON ROWS
-FROM [FPA_Variance]
-WHERE (
-  [Account].[Account].[REV-001],
-  [Time].[Time].[2024-01],
-  [Version].[Version].[V1]
-)
-```
+| Endpoint | Parameters | Agent Use |
+|----------|-----------|-----------|
+| `GET /crm/variance-context` | `dept_id`, `period`, `account_id?` | Revenue variance root cause |
+| `GET /crm/deals` | `dept_id?`, `period?`, `status?` | Individual deal lookup |
+| `GET /crm/pipeline-summary` | `dept_id`, `period` | Coverage ratio check |
+| `GET /erp/cost-context` | `dept_id`, `period`, `account_id?` | OpEx variance root cause |
+| `GET /erp/purchase-orders` | `dept_id?`, `period?` | PO detail lookup |
+| `GET /erp/headcount-events` | `dept_id?`, `period?` | Headcount cost detail |
 
 ---
 
