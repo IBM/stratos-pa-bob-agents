@@ -20,14 +20,13 @@ This hands-on workshop demonstrates how **IBM Bob**, **IBM Planning Analytics (T
 | [Deck](https://ibm.box.com/s/ajwak3kycul3n3oj3m5otehp18cd0flq) | watsonx Orchestrate overview | 30 min |
 | [Deck](https://ibm.box.com/s/ddmuis9g8l1twjfs4tymql36sad1eoah) | Bob overview: Planning Analytics assistant experience | 30 min |
 | [Lab 0](./lab-00-setup/README.md) | Environment setup, access validation & MCP configuration | 30 min |
-| — | *Break* | *20 min* |
-| [Lab 1](./lab-01-bob-planning-analytics-mcp/README.md) | **Hands-On Lab 1:** Bob + Planning Analytics via MCP | 45 min |
-| — | Use case overview: FP&A Variance Autopilot | 15 min |
+| — | *Break* | *15 min* |
+| [Lab 1](./lab-01-bob-planning-analytics-mcp/README.md) | **Hands-On Lab 1:** Bob + Planning Analytics via MCP | 60 min |
+| — | Use case overview: FP&A Variance Autopilot | 10 min |
 | — | *Lunch / Break* | *60 min* |
 | [Lab 2](./lab-02-fpa-variance-autopilot/README.md) | **Hands-On Lab 2:** FP&A Variance Autopilot | 90 min |
 | [Your Scenario](./session-03-your-scenario/README.md) | Your Scenario — map the pattern to your own use case | 15 min |
-| — | Shareback: one sentence per participant | 5 min |
-| — | Wrap-up, next steps, and Q&A | 10 min |
+| — | Shareback + Wrap-up, next steps, and Q&A | 10 min |
 
 ---
 
