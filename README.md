@@ -52,7 +52,7 @@ Before attending the workshop, ensure the following access is confirmed:
 | **IBM Bob** | Access with minimum 200 coins — confirm with your workshop organiser |
 | **IBM Planning Analytics** | TechZone-provisioned environment — URL and credentials shared ahead of the session |
 | **watsonx Orchestrate** | Trial access or IBM SaaS tenant — confirm with your workshop organiser |
-| **VS Code** | Latest version with the **IBM Bob extension** installed |
+| **IBM Bob IDE** | Download and install from [bob.ibm.com/download](https://bob.ibm.com/download) — confirm access with your workshop organiser |
 | **Laptop** | macOS or Windows with internet access |
 
 > **Access Clarification:** TechZone Planning Analytics environments will be shared with participants before the session. Bob and Orchestrate access models should be confirmed with the workshop organiser in advance.

@@ -289,7 +289,7 @@ Before moving to Lab 1, confirm **all** items are checked:
 |-------|--------|
 | Is `.bob/modes/planning-analytics/custom_modes.yaml` present? | Re-extract the ZIP — the `custom_modes.yaml` must be at `.bob/modes/planning-analytics/` |
 | Did you restart Bob after extraction? | Run `Cmd+Shift+P` → `Bob: Restart` |
-| Is VS Code using the workshop folder as the workspace root? | Open the `pa-bob-orchestrate-workshop/` folder directly — not a parent folder |
+| Is IBM Bob IDE using the workshop folder as the workspace root? | Open the `pa-bob-orchestrate-workshop/` folder directly — not a parent folder |
 
 ### Skill not loading
 
