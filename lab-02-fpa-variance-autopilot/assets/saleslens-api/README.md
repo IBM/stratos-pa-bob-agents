@@ -22,7 +22,7 @@ All data is seeded from the same variance scenarios in the workshop dataset — 
 
 ```bash
 # 1. Install dependencies
-cd pa-bob-orchestrate-workshop/lab-02-fpa-variance-autopilot/sample-app
+cd pa-bob-orchestrate-workshop/lab-02-fpa-variance-autopilot/assets/saleslens-api
 npm install
 
 # 2. Start the server

@@ -245,24 +245,24 @@ Bob calls `generate_exploration_analysis_report` and returns a base64-encoded PD
 
 ### Background: The Dataset
 
-The workshop repository includes a set of CSV files for an **FP&A Variance Analysis** model under `lab-02-fpa-variance-autopilot/assets/`. For this exercise, you will instruct Bob to build a TM1 cube from these files.
+The workshop repository includes a set of CSV files for an **FP&A Variance Analysis** model under `lab-01-bob-planning-analytics-mcp/assets/`. For this exercise, you will instruct Bob to build a TM1 cube from these files.
 
 The dataset contains:
-- `dim_account.csv` — Account dimension (Revenue, COGS, OPEX categories)
-- `dim_department.csv` — Department dimension (Sales regions, Engineering, Services)
-- `dim_scenario.csv` — Scenario dimension (Budget, Actual, Forecast, Prior Year)
-- `dim_time.csv` — Time dimension (Monthly periods 2023–2026)
-- `dim_version.csv` — Version dimension
-- `fact_financial_data.csv` — Financial fact data with Budget and Actual amounts
+- [`dim_account.csv`](assets/dim_account.csv) — Account dimension (Revenue, COGS, OPEX categories)
+- [`dim_department.csv`](assets/dim_department.csv) — Department dimension (Sales regions, Engineering, Services)
+- [`dim_scenario.csv`](assets/dim_scenario.csv) — Scenario dimension (Budget, Actual, Forecast, Prior Year)
+- [`dim_time.csv`](assets/dim_time.csv) — Time dimension (Monthly periods 2023–2026)
+- [`dim_version.csv`](assets/dim_version.csv) — Version dimension
+- [`fact_financial_data.csv`](assets/fact_financial_data.csv) — Financial fact data with Budget and Actual amounts
 
 ---
 
 ### Step 5.1 — Ask Bob to Build the Model
 
-Open a file browser to the `lab-02-fpa-variance-autopilot/assets/` folder so the CSV files are visible in your workspace. Then send Bob:
+Open a file browser to the `lab-01-bob-planning-analytics-mcp/assets/` folder so the CSV files are visible in your workspace. Then send Bob:
 
 ```
-I have CSV files in the lab-02-fpa-variance-autopilot/assets/ folder for an FP&A model.
+I have CSV files in the lab-01-bob-planning-analytics-mcp/assets/ folder for an FP&A model.
 Read the dimension files (dim_account.csv, dim_department.csv, dim_scenario.csv,
 dim_time.csv, dim_version.csv) and the fact file (fact_financial_data.csv).
 

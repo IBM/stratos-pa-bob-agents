@@ -205,7 +205,7 @@ Resist the temptation to model everything at once. Pick your single highest-valu
 
 ### The agent is a template
 
-The `fpa-variance-agent.yaml` in Lab 2 is designed to be adapted. The key sections to change for your scenario are:
+The `fpa-variance-agent.yaml` in `lab-02-fpa-variance-autopilot/assets/` is the monolithic reference agent from Lab 2 — designed to be adapted. For a multi-agent approach, adapt the individual sub-agent YAMLs in `lab-02-3-pa-agent/`, `lab-02-4-crm-erp-agents/`, and `lab-02-5-orchestrator/`. The key sections to change for your scenario are:
 - `description` — what your agent monitors
 - The variance detection thresholds in `instructions`
 - The root cause systems (CRM, ERP, HRIS) and what to query

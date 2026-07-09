@@ -1,8 +1,9 @@
 # Lab 2 — FP&A Variance Autopilot
 
-**Duration:** 90 minutes  
-**Tools:** watsonx Orchestrate · IBM Planning Analytics · SalesLens Mock API  
+**Duration:** 90 minutes
+**Tools:** watsonx Orchestrate · IBM Planning Analytics · SalesLens Mock API
 **Prerequisite:** [Lab 0](../lab-00-setup/README.md) ✅ and [Lab 1](../lab-01-bob-planning-analytics-mcp/README.md) ✅ completed
+**Reference:** [developer.watson-orchestrate.ibm.com](https://developer.watson-orchestrate.ibm.com)
 
 ---
 
@@ -10,7 +11,7 @@
 
 Your FP&A team currently spends **3–4 days each month** manually investigating budget variances across dozens of cost centres — cross-referencing Planning Analytics data with CRM pipeline reports and ERP operational data. By the time root causes are identified, the window for corrective action has often closed.
 
-**In this lab you will build the FP&A Variance Autopilot** — a watsonx Orchestrate agent that:
+**In this lab you will build the FP&A Variance Autopilot** — a multi-agent watsonx Orchestrate system that:
 
 1. **Detects** material budget variances in Planning Analytics (>$100K or >20%)
 2. **Calls the SalesLens CRM/ERP API** to enrich each variance with real business context
@@ -21,16 +22,70 @@ Time to complete the same workflow: **under 5 minutes**.
 
 ---
 
+## Sub-Lab Structure
+
+This lab is organised as a series of focused sub-labs. Each sub-lab has a single deliverable — complete them in order, or stop at any point.
+
+| Sub-Lab | Title | Deliverable | Time |
+|---------|-------|-------------|------|
+| [2.1](lab-02-1-add-mcp-server/README.md) | Add MCP Server & PA Tools | `planning-analytics-mcp` integration active | 15 min |
+| [2.2](lab-02-2-import-rest-api-tools/README.md) | Import SalesLens REST API as CRM & ERP Tools | `saleslens-crm` + `saleslens-erp` tools active | 15 min |
+| [2.3](lab-02-3-pa-agent/README.md) | Create the PA Data Agent | `PA Data Agent` live, queries FPA_Variance | 20 min |
+| [2.4](lab-02-4-crm-erp-agents/README.md) | Create CRM + ERP Sub-Agents | `CRM Context Agent` + `ERP Context Agent` live | 20 min |
+| [2.5](lab-02-5-orchestrator/README.md) | Create the Orchestrator Agent | `FP&A Variance Autopilot` running end-to-end | 25 min |
+| [2.6](lab-02-6-chat-embed/README.md) *(optional)* | Embed in HTML Chat Interface | `saleslens-crm-erp.html` calling the agent via REST | 15 min |
+
+**→ [Start with Lab 2.1](lab-02-1-add-mcp-server/README.md)**
+
+---
+
+## Architecture
+
+```
+User / Scheduler / TM1 Event
+           │
+           ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │                  watsonx Orchestrate                      │
+  │           FP&A Variance Autopilot (Orchestrator)          │
+  │                                                           │
+  │  ┌─────────────────┐ ┌────────────────┐ ┌─────────────┐  │
+  │  │  PA Data Agent  │ │ CRM Context    │ │ ERP Context │  │
+  │  │   (Lab 2.3)     │ │ Agent (Lab 2.4)│ │ Agent (2.4) │  │
+  │  └────────┬────────┘ └───────┬────────┘ └──────┬──────┘  │
+  └───────────┼──────────────────┼─────────────────┼─────────┘
+              │                  │                  │
+              ▼                  ▼                  ▼
+  ┌───────────────────┐  ┌───────────────────────────────┐
+  │  IBM Planning     │  │       SalesLens Mock API       │
+  │  Analytics (TM1)  │  │   ┌──────────┐ ┌──────────┐  │
+  │  FPA_Variance     │  │   │   CRM    │ │   ERP    │  │
+  │  (Budget/Actual)  │  │   │/variance │ │  /cost-  │  │
+  └───────────────────┘  │   │-context  │ │  context │  │
+                         │   └──────────┘ └──────────┘  │
+                         └───────────────────────────────┘
+              │                        │
+              └────────────┬───────────┘
+                           ▼
+               ┌───────────────────────┐
+               │  CFO-Ready Variance   │
+               │  Report + Stakeholder │
+               │  Alert Routing        │
+               └───────────────────────┘
+```
+
+---
+
 ## What You Will Do
 
-| Exercise | Task | Time |
-|----------|------|------|
-| [Exercise 1](#exercise-1--quick-catch-up-on-the-fpa-dataset) | Quick catch-up — confirm data from Lab 1 | 10 min |
-| [Exercise 2](#exercise-2--connect-planning-analytics-mcp-to-orchestrate) | Connect Planning Analytics MCP to Orchestrate | 15 min |
-| [Exercise 3](#exercise-3--create-the-fpa-agent--add-tools) | Create the agent + add MCP & REST API tools | 20 min |
-| [Exercise 4](#exercise-4--run-the-end-to-end-autopilot-flow) | Run the end-to-end autopilot flow | 15 min |
-| [Exercise 5](#exercise-5--agentops--evaluation) | AgentOps — trace, evaluate, and improve | 15 min |
-| [Exercise 6](#exercise-6--connect-via-watsonx-orchestrate-adk) | Connect using watsonx Orchestrate ADK | 15 min |
+| Step | What happens | Who/What does it |
+|------|-------------|-----------------|
+| 1️⃣ | Material budget variances detected in Planning Analytics (>$100K or >20%) | PA Data Agent |
+| 2️⃣ | Root cause investigated — CRM queried for revenue misses, ERP for cost overruns | CRM / ERP Context Agents |
+| 3️⃣ | Plain-language CFO-ready explanation generated for every variance | Orchestrator Agent |
+| 4️⃣ | Stakeholder alerts routed by severity — VP email, FP&A dashboard, CFO digest | Orchestrator Agent |
+
+By the end of this lab you will have built all four of these steps as a live multi-agent system in watsonx Orchestrate, running end-to-end in under 5 minutes.
 
 ---
 
@@ -213,7 +268,7 @@ The `context_summary` field is the ready-made root cause narrative the agent wil
 Rather than typing instructions manually, import from the pre-built agent definition:
 
 1. Click **Import from YAML** (or **Advanced** → **YAML editor**).
-2. Open `lab-02-fpa-variance-autopilot/assets/fpa-variance-agent.yaml` from this repository.
+2. Open `lab-02-fpa-variance-autopilot/assets/fpa-variance-agent.yaml` (the monolithic reference YAML) from this repository.
 3. Paste the full YAML content and click **Apply** or **Save**.
 
 > The YAML contains the complete agent persona, reasoning chain, variance thresholds, root cause logic, alert routing rules, and response format.
@@ -603,7 +658,7 @@ The `fpa-variance-agent.yaml` in this repo is already ADK-compatible. Deploy it 
 
 ```bash
 orchestrate agents import \
-  --file lab-02-fpa-variance-autopilot/assets/fpa-variance-agent.yaml
+  --file lab-02-fpa-variance-autopilot/assets/fpa-variance-agent.yaml   # monolithic reference
 ```
 
 Verify:
@@ -652,44 +707,6 @@ curl -X POST \
 ```
 
 > **Production pattern:** This is how you would trigger the autopilot from a Planning Analytics TurboIntegrator process, a scheduler, or a Power Automate flow — the moment actuals land in TM1, call this endpoint.
-
----
-
-## Architecture: How the Autopilot Works
-
-```
-User / Scheduler / TM1 Event
-           │
-           ▼
-  ┌─────────────────────────────────────────┐
-  │        watsonx Orchestrate               │
-  │   FP&A Variance Autopilot Agent          │
-  │                                          │
-  │  ┌──────────────┐  ┌──────────────────┐  │
-  │  │ PA MCP Tools │  │ SalesLens REST   │  │
-  │  │  (9 tools)   │  │  API (6 tools)   │  │
-  │  └──────┬───────┘  └────────┬─────────┘  │
-  └─────────┼───────────────────┼────────────┘
-            │                   │
-            ▼                   ▼
-  ┌──────────────────┐  ┌────────────────────┐
-  │ IBM Planning     │  │  SalesLens Mock     │
-  │ Analytics (TM1)  │  │  ┌─────┐ ┌─────┐  │
-  │                  │  │  │ CRM │ │ ERP │  │
-  │ FPA_Variance     │  │  └─────┘ └─────┘  │
-  │ cube             │  │  /crm/variance-    │
-  │ (Budget/Actual)  │  │  context           │
-  └──────────────────┘  │  /erp/cost-context │
-                        └────────────────────┘
-            │                   │
-            └─────────┬─────────┘
-                      ▼
-           ┌─────────────────────┐
-           │  AI Explanation     │
-           │  + Stakeholder      │
-           │  Alert Routing      │
-           └─────────────────────┘
-```
 
 ---
 

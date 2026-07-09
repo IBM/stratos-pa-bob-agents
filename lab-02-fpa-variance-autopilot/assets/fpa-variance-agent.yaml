@@ -231,12 +231,12 @@ tools:
 
 # ── Configuration notes ───────────────────────────────────────────────────────
 # External systems API:
-#   Deploy sample-app/ to IBM Code Engine and update the tool base URLs above.
+#   Deploy assets/saleslens-api/ to IBM Code Engine and update the tool base URLs above.
 #   In Orchestrate, add the external API as a custom tool using the OpenAPI spec
 #   served at: https://<YOUR_CODE_ENGINE_URL>/api-spec
 #   API Key: set in Orchestrate tool credentials as X-Api-Key header
 #
 # Made with IBM Bob
 # FP&A Variance Autopilot — Planning Analytics × watsonx Orchestrate Workshop
-# Source data: lab-02-fpa-variance-autopilot/assets/fact_financial_data.csv
-#              lab-02-fpa-variance-autopilot/sample-app/ (external systems mock)
+# Source data: lab-01-bob-planning-analytics-mcp/assets/fact_financial_data.csv (+ dim_*.csv)
+#              lab-02-fpa-variance-autopilot/assets/saleslens-api/ (external systems mock)
