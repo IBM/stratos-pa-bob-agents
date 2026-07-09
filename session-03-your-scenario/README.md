@@ -8,15 +8,28 @@
 
 ## What This Session Is
 
-You have built the FP&A Variance Autopilot end-to-end. This session is about **mapping the same pattern to your own organisation** — not building, just thinking.
+You have built the FP&A Variance Autopilot. Now map the same pattern to your own organisation. A facilitator will circulate. Bob is open.
 
-A facilitator will circulate. Bob is open. Use both.
+---
+
+## Inspiration — What Others Have Built
+
+Use this table to spark ideas before you fill in the canvas below.
+
+| Scenario | Planning Object | Root Cause System | Trigger |
+|----------|----------------|-------------------|---------|
+| Sales Performance Autopilot | Revenue by rep, region, product | CRM deal pipeline | Monthly actuals close |
+| Headcount Variance Monitor | HC and comp by department | HRIS attrition + open positions | Bi-weekly payroll run |
+| Capex Tracker | Project spend vs approved budget | ERP purchase orders + invoices | Weekly actuals posting |
+| Manufacturing Cost Sentinel | Production costs by plant | MES downtime and scrap rates | Daily production close |
+| Marketing ROI Autopilot | Campaign spend vs pipeline | CRM influenced pipeline | Campaign close |
+| Cash Flow Early Warning | Cash actuals vs forecast | AP/AR aging from ERP | Daily bank reconciliation |
 
 ---
 
 ## The Canvas (5 minutes)
 
-Answer these three questions for a Planning Analytics use case from your own work. Keep it to one sentence each. Write them down — you will paste them into Bob next.
+Answer these three questions for a Planning Analytics use case from your own work. One sentence each. Write them down — you will paste them into Bob next.
 
 **1. What is the planning object?**
 > The cube / data you would monitor.  
@@ -32,9 +45,9 @@ Answer these three questions for a Planning Analytics use case from your own wor
 
 ---
 
-## The Bob Prompt (5 minutes)
+## The Bob Prompt (8 minutes)
 
-Once you have your three answers, paste this into Bob:
+Paste this into Bob with your three answers filled in:
 
 ```
 I want to adapt the FP&A Variance Autopilot for my own scenario:
@@ -52,28 +65,7 @@ Based on this:
 Keep it concise — one paragraph per answer.
 ```
 
-Bob will give you a draft agent description and a list of changes. That is your starting point for a real PoC.
-
----
-
-## Shareback (3 minutes)
-
-Prepare **one sentence** to share with the group:
-
-> *"In my scenario, [planning object] has a [variance story] problem — I would connect [root cause system] to explain it."*
-
----
-
-## Inspiration — What Others Have Built
-
-| Scenario | Planning Object | Root Cause System | Trigger |
-|----------|----------------|-------------------|---------|
-| Sales Performance Autopilot | Revenue by rep, region, product | CRM deal pipeline | Monthly actuals close |
-| Headcount Variance Monitor | HC and comp by department | HRIS attrition + open positions | Bi-weekly payroll run |
-| Capex Tracker | Project spend vs approved budget | ERP purchase orders + invoices | Weekly actuals posting |
-| Manufacturing Cost Sentinel | Production costs by plant | MES downtime and scrap rates | Daily production close |
-| Marketing ROI Autopilot | Campaign spend vs pipeline | CRM influenced pipeline | Campaign close |
-| Cash Flow Early Warning | Cash actuals vs forecast | AP/AR aging from ERP | Daily bank reconciliation |
+Bob's response is your starting point for a real PoC. Save it.
 
 ---
 
