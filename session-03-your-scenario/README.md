@@ -1,6 +1,6 @@
 # Your Scenario
 
-**Duration:** 15 minutes  
+**Duration:** 15 minutes (canvas 5 min · Bob prompt 8 min · write your sentence 2 min)
 **Format:** Facilitated discussion — no hands-on required  
 **Prerequisite:** [Lab 2](../lab-02-fpa-variance-autopilot/README.md) ✅ completed
 
@@ -27,7 +27,7 @@ Use this table to spark ideas before you fill in the canvas below.
 
 ---
 
-## The Canvas (5 minutes)
+## The Canvas 
 
 Answer these three questions for a Planning Analytics use case from your own work. One sentence each. Write them down — you will paste them into Bob next.
 
@@ -45,7 +45,7 @@ Answer these three questions for a Planning Analytics use case from your own wor
 
 ---
 
-## The Bob Prompt (8 minutes)
+## The Bob Prompt 
 
 Paste this into Bob with your three answers filled in:
 
