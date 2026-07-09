@@ -26,7 +26,7 @@ This hands-on workshop demonstrates how **IBM Bob**, **IBM Planning Analytics (T
 | — | Use case overview: FP&A Variance Autopilot | 15 min |
 | — | *Lunch / Break* | *60 min* |
 | [Lab 2](./lab-02-fpa-variance-autopilot/README.md) | **Hands-On Lab 2:** FP&A Variance Autopilot | 90 min |
-| [Lab 3](./lab-03-bring-your-own-usecase/README.md) | Adapt the autopilot to your own use case | 30 min |
+| [Your Scenario](./session-03-your-scenario/README.md) | Your Scenario — map the pattern to your own use case | 15 min |
 | — | Shareback: participant ideas and discussion | 10 min |
 | — | Wrap-up, next steps, and Q&A | 10 min |
 
@@ -91,8 +91,8 @@ pa-bob-orchestrate-workshop/
 │   ├── lab-02-5-orchestrator/             ← Sub-lab: Orchestrator agent + YAML
 │   └── lab-02-6-chat-embed/               ← Sub-lab (optional): HTML chat embed
 │
-└── lab-03-bring-your-own-usecase/
-    └── README.md                          ← Guided exploration for your own scenario
+└── session-03-your-scenario/
+    └── README.md                          ← 15-min canvas + Bob prompt + shareback
 ```
 
 ---
@@ -116,7 +116,7 @@ A **multi-agent watsonx Orchestrate system** monitors Planning Analytics for mat
 | Configure MCP and query TM1 using natural language | Lab 0 + Lab 1 |
 | Build a TM1 cube from CSV data via Bob | Lab 1 |
 | Run end-to-end variance detection and explanation | Lab 2 |
-| Adapt the autopilot to your own Planning Analytics use case | Lab 3 |
+| Adapt the autopilot to your own Planning Analytics use case | Your Scenario session |
 
 ---
 
