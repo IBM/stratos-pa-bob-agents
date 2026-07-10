@@ -78,7 +78,6 @@ pa-bob-orchestrate-workshop/
 ├── lab-02-fpa-variance-autopilot/
 │   ├── README.md                          ← Lab 2 overview + sub-lab navigation
 │   ├── TODO.md                            ← Asset checklist and facilitator notes
-│   ├── lab-02-readiness-assessment-sub-lab-plan.html  ← Sub-lab planning reference
 │   ├── assets/
 │   │   ├── fpa-variance-agent.yaml        ← Full agent YAML (working version)
 │   │   ├── fpa-variance-agent-reference.yaml  ← Reference / answer key
