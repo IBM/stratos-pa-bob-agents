@@ -64,30 +64,42 @@ Before attending the workshop, ensure the following access is confirmed:
 ```
 pa-bob-orchestrate-workshop/
 ├── README.md                              ← You are here
-├── FACILITATOR_GUIDE.md                   ← Facilitator notes and timing guidance
 │
 ├── lab-00-setup/
 │   └── README.md                          ← Environment setup and MCP configuration
 │
 ├── lab-01-bob-planning-analytics-mcp/
 │   ├── README.md                          ← Lab 1 instructions
+│   ├── mcp.json                           ← MCP server configuration template
 │   └── assets/
-│       ├── mcp.json                       ← MCP server configuration template
 │       ├── fact_financial_data.csv        ← Financial fact data (loaded in Lab 1 Ex 5)
 │       └── dim_*.csv                      ← Dimension data files (Account, Dept, Time…)
 │
 ├── lab-02-fpa-variance-autopilot/
 │   ├── README.md                          ← Lab 2 overview + sub-lab navigation
 │   ├── TODO.md                            ← Asset checklist and facilitator notes
+│   ├── lab-02-readiness-assessment-sub-lab-plan.html  ← Sub-lab planning reference
 │   ├── assets/
-│   │   ├── fpa-variance-agent.yaml        ← Monolithic agent reference / answer key
+│   │   ├── fpa-variance-agent.yaml        ← Full agent YAML (working version)
+│   │   ├── fpa-variance-agent-reference.yaml  ← Reference / answer key
 │   │   └── saleslens-api/                 ← SalesLens Mock CRM+ERP API (Node.js app)
-│   ├── lab-02-1-add-mcp-server/           ← Sub-lab: register PA MCP + credentials
-│   ├── lab-02-2-import-rest-api-tools/    ← Sub-lab: import SalesLens OpenAPI tools
-│   ├── lab-02-3-pa-agent/                 ← Sub-lab: PA Data Agent + pa-data-agent.yaml
-│   ├── lab-02-4-crm-erp-agents/           ← Sub-lab: CRM + ERP agents + YAMLs
-│   ├── lab-02-5-orchestrator/             ← Sub-lab: Orchestrator agent + YAML
-│   └── lab-02-6-chat-embed/               ← Sub-lab (optional): HTML chat embed
+│   ├── lab-02-1-add-mcp-server/
+│   │   └── README.md                      ← Sub-lab: register PA MCP + credentials
+│   ├── lab-02-2-import-rest-api-tools/
+│   │   └── README.md                      ← Sub-lab: import SalesLens OpenAPI tools
+│   ├── lab-02-3-pa-agent/
+│   │   ├── README.md                      ← Sub-lab: PA Data Agent instructions
+│   │   └── pa-data-agent.yaml             ← PA Data Agent definition
+│   ├── lab-02-4-crm-erp-agents/
+│   │   ├── README.md                      ← Sub-lab: CRM + ERP agent instructions
+│   │   ├── crm-agent.yaml                 ← CRM Agent definition
+│   │   └── erp-agent.yaml                 ← ERP Agent definition
+│   ├── lab-02-5-orchestrator/
+│   │   ├── README.md                      ← Sub-lab: Orchestrator agent instructions
+│   │   └── fpa-orchestrator-agent.yaml    ← Orchestrator Agent definition
+│   └── lab-02-6-chat-embed/
+│       ├── README.md                      ← Sub-lab (optional): HTML chat embed
+│       └── saleslens-crm-erp.html         ← Embeddable chat UI
 │
 └── session-03-your-scenario/
     └── README.md                          ← 15-min canvas + Bob prompt + shareback
