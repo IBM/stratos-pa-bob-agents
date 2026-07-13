@@ -111,23 +111,24 @@ router.get('/pipeline-summary', (req, res) => {
 // ── GET /crm/variance-context ─────────────────────────────────────────────────
 router.get('/variance-context', (req, res) => {
   const { dept_id, period, account_id } = req.query;
-  if (!dept_id || !period) return res.status(400).json({ error: 'dept_id and period are required' });
 
-  let slippedDeals = store.deals.filter(d => d.dept_id === dept_id && d.period_impacted === period && ['slipped','at_risk'].includes(d.status));
-  let earlyCloses  = store.deals.filter(d => d.dept_id === dept_id && d.period_impacted === period && d.status === 'early_close');
-  if (account_id) { slippedDeals = slippedDeals.filter(d => d.account_id === account_id); }
+  let slippedDeals = store.deals.filter(d => ['slipped','at_risk'].includes(d.status));
+  let earlyCloses  = store.deals.filter(d => d.status === 'early_close');
+  if (dept_id)    { slippedDeals = slippedDeals.filter(d => d.dept_id === dept_id);         earlyCloses = earlyCloses.filter(d => d.dept_id === dept_id); }
+  if (period)     { slippedDeals = slippedDeals.filter(d => d.period_impacted === period);   earlyCloses = earlyCloses.filter(d => d.period_impacted === period); }
+  if (account_id) { slippedDeals = slippedDeals.filter(d => d.account_id === account_id);   earlyCloses = earlyCloses.filter(d => d.account_id === account_id); }
 
   const totalSlipped    = slippedDeals.reduce((s,d) => s + d.arr_value, 0);
   const totalEarlyClose = earlyCloses.reduce((s,d)  => s + d.arr_value, 0);
-  const deptPipeline    = store.pipelineSummary[dept_id];
-  const pipeline        = deptPipeline ? (deptPipeline[period] || null) : null;
+  const deptPipeline    = dept_id ? store.pipelineSummary[dept_id] : null;
+  const pipeline        = deptPipeline && period ? (deptPipeline[period] || null) : null;
 
   let summary = '';
   if (slippedDeals.length)  summary += `${slippedDeals.length} deal(s) totalling $${(totalSlipped/1000).toFixed(0)}K slipped: ${slippedDeals.map(d=>`${d.account_name} ($${(d.arr_value/1000).toFixed(0)}K)`).join(', ')}. `;
   if (earlyCloses.length)   summary += `${earlyCloses.length} early close(s) totalling $${(totalEarlyClose/1000).toFixed(0)}K. `;
-  if (!summary) summary = 'No deal slippage or early closes found for this period and department.';
+  if (!summary) summary = 'No deal slippage or early closes found for the selected filters.';
 
-  res.json({ dept_id, period, account_id: account_id||'all', context_summary: summary.trim(),
+  res.json({ dept_id: dept_id||'all', period: period||'all', account_id: account_id||'all', context_summary: summary.trim(),
     slipped_deals: slippedDeals, early_closes: earlyCloses,
     total_slipped_value: totalSlipped, total_early_close_value: totalEarlyClose,
     pipeline_summary: pipeline, data_source: 'Mock CRM — Workshop Demo' });

@@ -44,35 +44,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Root discovery endpoint ───────────────────────────────────────────────────
+// ── Root — service info (Orchestrate connection check hits this) ──────────────
 app.get('/', (req, res) => {
   res.json({
     name: 'SalesLens — FP&A External Systems API',
     version: '1.0.0',
-    description: 'Mock CRM and ERP endpoints for the FP&A Variance Autopilot workshop',
+    status: 'ok',
     ui: '/demo',
     docs: '/docs',
     openapi: '/api-spec',
-    health: '/health',
-    endpoints: {
-      crm: {
-        base: '/crm',
-        routes: [
-          'GET /crm/deals?dept_id=&period=&status=',
-          'GET /crm/deals/:deal_id',
-          'GET /crm/pipeline-summary?dept_id=&period=',
-          'GET /crm/variance-context?dept_id=&period=&account_id='
-        ]
-      },
-      erp: {
-        base: '/erp',
-        routes: [
-          'GET /erp/purchase-orders?dept_id=&period=&account_id=',
-          'GET /erp/headcount-events?dept_id=&period=',
-          'GET /erp/cost-context?dept_id=&period=&account_id='
-        ]
-      }
-    }
+    health: '/health'
   });
 });
 
@@ -94,28 +75,36 @@ function serveSwaggerHtml(req, res) {
   <title>SalesLens — API Docs</title>
   <link rel="stylesheet" href="/docs-assets/swagger-ui.css">
   <style>
-    body { margin: 0; }
-    .topbar { background: #161616 !important; }
-    .topbar-wrapper img { display: none; }
-    .topbar-wrapper::before {
-      content: 'SalesLens — FP&A External Systems API';
-      color: #fff; font-size: 17px; font-weight: 700; padding-left: 16px;
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    #topnav {
+      display: flex; align-items: center; gap: 16px;
+      background: #161616; height: 48px; padding: 0 20px;
     }
+    #topnav span { color: #fff; font-size: 15px; font-weight: 700; }
+    #topnav a {
+      color: #78a9ff; font-size: 12px; text-decoration: none;
+      font-family: monospace; margin-left: auto;
+    }
+    #topnav a:hover { text-decoration: underline; }
     .swagger-ui .info .title { color: #0f62fe; }
     .swagger-ui .scheme-container { background: #f4f4f4; padding: 12px 20px; }
   </style>
 </head>
 <body>
+  <div id="topnav">
+    <span>SalesLens — API Docs</span>
+    <a href="/demo">← Back to Demo UI</a>
+    <a href="/health" style="margin-left:12px">Health</a>
+  </div>
   <div id="swagger-ui"></div>
   <script src="/docs-assets/swagger-ui-bundle.js"></script>
-  <script src="/docs-assets/swagger-ui-standalone-preset.js"></script>
   <script>
     window.onload = function() {
       SwaggerUIBundle({
         url: '/api-spec',
         dom_id: '#swagger-ui',
-        presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-        layout: 'StandaloneLayout',
+        presets: [SwaggerUIBundle.presets.apis],
+        layout: 'BaseLayout',
         deepLinking: true,
         defaultModelsExpandDepth: 1,
         tryItOutEnabled: true,

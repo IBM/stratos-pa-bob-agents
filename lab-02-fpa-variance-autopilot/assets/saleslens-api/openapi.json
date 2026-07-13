@@ -11,12 +11,8 @@
   },
   "servers": [
     {
-      "url": "https://your-app.codeengine.appdomain.cloud",
-      "description": "IBM Code Engine deployment (update after deploy)"
-    },
-    {
-      "url": "http://localhost:8080",
-      "description": "Local development"
+      "url": "https://saleslens-api.2c3c5b751ehr.eu-de.codeengine.appdomain.cloud",
+      "description": "IBM Code Engine — eu-de (Frankfurt)"
     }
   ],
   "security": [

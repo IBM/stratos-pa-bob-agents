@@ -23,6 +23,7 @@ COPY server.js      ./
 COPY openapi.json   ./
 COPY routes/        ./routes/
 COPY data/          ./data/
+COPY public/        ./public/
 
 # Set ownership
 RUN chown -R appuser:appgroup /app

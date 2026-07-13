@@ -122,17 +122,18 @@ router.delete('/headcount-events/:event_id', (req, res) => {
 // ── GET /erp/cost-context ─────────────────────────────────────────────────────
 router.get('/cost-context', (req, res) => {
   const { dept_id, period, account_id } = req.query;
-  if (!dept_id || !period) return res.status(400).json({ error: 'dept_id and period are required' });
-  let pos = store.purchaseOrders.filter(p => p.dept_id===dept_id && p.period===period && !p.is_budgeted);
-  let hcs = store.headcountEvents.filter(h => h.dept_id===dept_id && h.period_first_impact===period && !h.budget_included);
-  if (account_id) pos = pos.filter(p => p.account_id === account_id);
+  let pos = store.purchaseOrders.filter(p => !p.is_budgeted);
+  let hcs = store.headcountEvents.filter(h => !h.budget_included);
+  if (dept_id)    { pos = pos.filter(p => p.dept_id === dept_id);             hcs = hcs.filter(h => h.dept_id === dept_id); }
+  if (period)     { pos = pos.filter(p => p.period  === period);              hcs = hcs.filter(h => h.period_first_impact === period); }
+  if (account_id) { pos = pos.filter(p => p.account_id === account_id); }
   const totalPo = pos.reduce((s,p)=>s+p.amount,0);
   const totalHc = hcs.reduce((s,h)=>s+h.monthly_cost,0);
   let summary = '';
   if (pos.length) summary += `${pos.length} unbudgeted PO(s) totalling $${(totalPo/1000).toFixed(0)}K. `;
   if (hcs.length) summary += `${hcs.length} unbudgeted headcount event(s) adding $${(totalHc/1000).toFixed(0)}K/month. `;
   if (!summary) summary = 'No unbudgeted cost events found.';
-  res.json({ dept_id, period, account_id: account_id||'all', context_summary: summary.trim(),
+  res.json({ dept_id: dept_id||'all', period: period||'all', account_id: account_id||'all', context_summary: summary.trim(),
     total_unplanned_cost: totalPo+totalHc, unbudgeted_purchase_orders: pos,
     unbudgeted_headcount_events: hcs, cost_benchmarks: store.costBenchmarks, data_source: 'Mock ERP — Workshop Demo' });
 });
