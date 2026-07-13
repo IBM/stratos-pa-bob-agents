@@ -62,7 +62,7 @@ The mode configures Bob with deep TM1 expertise and activates the correct MCP to
 
 **Installation steps:**
 
-1. Open VS Code and open the **workshop folder** (`pa-bob-orchestrate-workshop/`) as the workspace root.
+1. Open **IBM Bob IDE** and open the **workshop folder** (`pa-bob-orchestrate-workshop/`) as the workspace root.
 2. Create the Bob modes directory if it does not exist:
    ```bash
    mkdir -p .bob/modes
@@ -85,7 +85,7 @@ The mode configures Bob with deep TM1 expertise and activates the correct MCP to
                ├── 5_response_patterns.xml
                └── 6_troubleshooting.xml
    ```
-4. Restart Bob: press `Cmd+Shift+P` / `Ctrl+Shift+P` → **`Bob: Restart`**.
+4. Restart Bob: press `Cmd+Shift+P` (Mac) / `Ctrl+Shift+P` (Windows) → **`Bob: Restart`**.
 
 ---
 
@@ -154,19 +154,43 @@ Bob should list `planning-analytics` as an active skill.
 
 Bob connects to your Planning Analytics TechZone environment using the **Model Context Protocol (MCP)**. You need to add the MCP server configuration before any data queries will work.
 
-### Step 3a — Open MCP Settings
+### Step 3a — Generate Your Base64 Credentials Using Bob
 
-In VS Code, press `Cmd+Shift+P` / `Ctrl+Shift+P` and run **`Bob: Open MCP Settings`**.
+The MCP server requires credentials in the format `Basic <base64(username:password)>`. Use Bob to generate this — no terminal needed.
+
+In the Bob chat panel, send:
+
+```
+Run this shell command and give me the output:
+echo -n "admin:your-password-here" | base64
+```
+
+Replace `admin` and `your-password-here` with the username and password provided by your facilitator.
+
+**Bob will return something like:**
+```
+YWRtaW46eW91ci1wYXNzd29yZC1oZXJl
+```
+
+📋 **Copy this value** — you will paste it as `<YOUR_BASE64_CREDENTIALS>` in the next step.
+
+> **Why Base64?** The Planning Analytics MCP server uses HTTP Basic Auth. The `Authorization: Basic <value>` header requires credentials encoded as `base64(username:password)`. Bob runs the command locally on your machine — your credentials are never sent anywhere.
+
+---
+
+### Step 3b — Open MCP Settings
+
+In IBM Bob IDE, press `Cmd+Shift+P` (Mac) / `Ctrl+Shift+P` (Windows) and run **`Bob: Open MCP Settings`**.
 
 This opens the `mcp.json` configuration file. If the file does not exist yet, Bob will create it.
 
 ---
 
-### Step 3b — Add the MCP Server Configuration
+### Step 3c — Add the MCP Server Configuration
 
 Replace the contents of `mcp.json` with the configuration below.
 
-> **Credentials:** Your facilitator will provide `TECHZONE_HOST`, `PORT`, `TENANT_ID`, and `BASE64_CREDENTIALS` at the start of the workshop. These are specific to the shared TechZone instance for this session.
+> **Credentials:** Your facilitator will provide `TECHZONE_HOST`, `PORT`, and `TENANT_ID`. Use the Base64 value you generated in Step 3a for `BASE64_CREDENTIALS`.
 
 ```json
 {
@@ -224,15 +248,11 @@ Replace the contents of `mcp.json` with the configuration below.
 }
 ```
 
-> **How to encode credentials:**
-> ```bash
-> echo -n "APIKey:your-api-key-here" | base64
-> ```
-> Paste the resulting string as the value for `Authorization: "Basic <...>"`.
+> **Credentials reminder:** Paste the Base64 string you generated in Step 3a as the value for `Authorization: "Basic <...>"`.
 
 ---
 
-### Step 3c — Save and Reload
+### Step 3d — Save and Reload
 
 1. Save the file (`Cmd+S` / `Ctrl+S`).
 2. Restart the MCP servers: press `Cmd+Shift+P` → **`Bob: Restart MCP Servers`**.
