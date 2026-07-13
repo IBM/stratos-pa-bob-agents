@@ -137,12 +137,61 @@ STEP 6 — Stakeholder routing:
 
 ## Step 5 — Run the End-to-End Autopilot
 
-In the agent **Preview** / **Test** panel, send:
+In the agent **Preview** / **Test** panel, use any of the prompts below.
+
+> **Tip:** Always specify the **cube name** and **server name** in your prompt — the agent discovers dynamically but explicit names give faster, more reliable results.
+
+### 🔍 Discovery prompts (PA exploration — no variance analysis)
 
 ```
-Run the FP&A variance analysis for January 2024 on the FPA_Variance cube
+List all cubes on DemoGuide.
+```
+```
+What cubes are available on 24Retail?
+```
+```
+Show me the dimensions of the FPA_Analysis cube on DemoGuide.
+```
+```
+Which cubes are pre-analyzed on DemoGuide?
+```
+
+> These are delegated directly to `pa_data_agent` and returned without triggering variance analysis.
+
+---
+
+### 📊 Full variance analysis prompts
+
+**Recommended format — explicit server + cube:**
+```
+Run the FP&A variance analysis for January 2024 on the FPA_Analysis cube
 on the DemoGuide server. Identify all material variances, investigate root
 causes using the CRM and ERP systems, and generate a full variance report.
+```
+
+**With custom thresholds:**
+```
+Show me January 2024 actual vs budget for all departments on the FPA_Analysis
+cube on DemoGuide. Flag any variance greater than $100,000 or 20%.
+Investigate root causes and generate a variance report.
+```
+
+**Focused on a department:**
+```
+Run variance analysis for March 2024 on FPA_Analysis on DemoGuide.
+Focus on APAC Sales only. Include CRM root cause context.
+```
+
+**Focused on a period + department:**
+```
+Run variance analysis for March 2025 on FPA_Analysis on DemoGuide.
+Focus on Product Engineering. Check ERP for unbudgeted costs.
+```
+
+**Open-ended (agent discovers server + cube):**
+```
+Run the FP&A variance autopilot for January 2024. Identify all material
+variances and investigate root causes.
 ```
 
 ### Watch the sub-agent call trace
@@ -225,19 +274,14 @@ Confidence: 0.95 | Alerts: VP Sales (email), FP&A Manager (dashboard)
 
 ---
 
-## Step 6 — Try Additional Periods
+## Step 6 — Try Additional Periods & Scenarios
 
-```
-Run variance analysis for March 2024. Focus on APAC Sales.
-```
-
-Expected: `-$85K (-30.4%)` APAC revenue variance → CRM Agent returns Sino-Digital regulatory delay.
-
-```
-Run variance analysis for March 2025. Focus on Product Engineering.
-```
-
-Expected: `+$45K (+8.7%)` Prod Eng OpEx variance → ERP Agent returns NVIDIA GPU PO + ML contractor.
+| Prompt | Expected result |
+|--------|----------------|
+| `Run variance analysis for March 2024 on FPA_Analysis on DemoGuide. Focus on APAC Sales.` | `-$85K (-30.4%)` APAC revenue → CRM: Sino-Digital regulatory delay |
+| `Run variance analysis for March 2025 on FPA_Analysis on DemoGuide. Focus on Product Engineering.` | `+$45K (+8.7%)` Prod Eng OpEx → ERP: NVIDIA GPU PO + ML contractor |
+| `Run variance analysis for May 2024 on FPA_Analysis on DemoGuide. Focus on EMEA Sales.` | `-$35K (-8.3%)` EMEA revenue → CRM: UK market uncertainty |
+| `Run variance analysis for May 2024 on FPA_Analysis on DemoGuide. Focus on Marketing.` | `+$23K (+24.2%)` Marketing OpEx → ERP: Digital campaign launch PO |
 
 ---
 

@@ -18,14 +18,27 @@ instructions: >
   - You never fabricate numbers or root causes. Every figure comes from a sub-agent.
 
   Sub-agents available to you:
-  - pa_data_agent       — queries Planning Analytics FPA_Variance cube;
-                          returns budget vs actual table with material variance flags.
+  - pa_data_agent       — queries Planning Analytics cubes (server and cube
+                          discovered dynamically); returns budget vs actual
+                          table with material variance flags. Also handles
+                          PA exploration queries (list cubes, servers, dimensions).
   - crm_context_agent   — queries SalesLens CRM API;
                           returns deal slippage and pipeline context for Revenue variances.
   - erp_context_agent   — queries SalesLens ERP API;
                           returns unbudgeted POs and headcount events for OpEx/COGS variances.
 
   Orchestration reasoning:
+  - STEP 0 — Handle exploration / discovery requests:
+      If the user asks to list cubes, list servers, show dimensions, or any
+      general PA exploration question (NOT a variance analysis):
+        → Delegate directly to pa_data_agent with the user's exact question.
+        → Return pa_data_agent's response directly — do not run variance analysis.
+      Examples of exploration requests:
+        "List all cubes on 24Retail"
+        "What servers are available?"
+        "Show me the dimensions of FPA_Analysis"
+        "What cubes are pre-analyzed on DemoGuide?"
+
   - When you receive a variance analysis request:
 
     STEP 1 — Identify scope:
