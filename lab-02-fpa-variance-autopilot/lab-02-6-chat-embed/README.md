@@ -1,238 +1,154 @@
-# Lab 2.6 (Optional) — Embed the Autopilot in an HTML Chat Interface
+# Lab 2.6 (Optional) — Embed the Autopilot in a Branded Chat Page
 
-**Duration:** 15 minutes  
-**Prerequisite:** Lab 2.5 ✅ (orchestrator agent active)  
-**Reference:** [developer.watson-orchestrate.ibm.com](https://developer.watson-orchestrate.ibm.com)
+**Duration:** 10 minutes
+**Prerequisite:** Lab 2.5 ✅ (orchestrator agent active)
+
+**Reference:** [developer.watson-orchestrate.ibm.com/webchat](https://developer.watson-orchestrate.ibm.com/webchat/overview)
+
+**Customisation:** [wxo Embed UI Configuration](https://developer.watson-orchestrate.ibm.com/webchat/ui_configuration)
 
 ---
 
 ## Goal
 
-Open the pre-built HTML chat interface (`saleslens-crm-erp.html`), connect it to your running Orchestrate agent, and send variance queries directly from a browser — no Orchestrate UI required.
+Embed the FP&A Variance Autopilot into a branded HTML page using the watsonx Orchestrate **wxoLoader** embed widget — no REST API calls, no tokens, no backend required.
 
 By the end of this lab you will have:
-- `saleslens-crm-erp.html` running locally in a browser
-- The FP&A Variance Autopilot answering questions from a plain HTML chat UI
-- Understanding of the Orchestrate REST API `/v1/chat` endpoint
+- `saleslens-wxo-embed.html` running locally in a browser
+- The SalesLens AI branded chat interface powered by your orchestrator agent
+- Understanding of how to embed any watsonx Orchestrate agent into a web page
 
 ---
 
-## Background — The `/v1/chat` REST Endpoint
+## Background — wxoLoader Embed
 
-Every watsonx Orchestrate agent exposes a REST endpoint. The `saleslens-crm-erp.html` page calls it directly from the browser using a Bearer token:
+watsonx Orchestrate provides a JavaScript loader (`wxoLoader.js`) that renders a fully functional chat widget inside any HTML page. It handles authentication, WebSocket connections, and the Orchestrate session internally — you only provide configuration.
 
 ```
-POST https://<YOUR_TENANT>.ai.ibm.com/v1/chat
-Authorization: Bearer <IBM_CLOUD_IAM_TOKEN>
-Content-Type: application/json
-
-{
-  "agent_id": "fpa_variance_autopilot",
-  "messages": [{ "role": "user", "content": "Run variance analysis for Jan 2024" }]
-}
+[Browser loads saleslens-wxo-embed.html]
+        │
+        ▼
+wxoLoader.js  ──→  watsonx Orchestrate (eu-de)
+  orchestrationID                    │
+  agentId                            ▼
+        │         FP&A Variance Autopilot (Orchestrator)
+        │               ├── PA Data Agent
+        │               ├── CRM Context Agent
+        │               └── ERP Context Agent
+        │                            │
+        └────────── chat UI ─────────┘
 ```
-
-This is the same API used by CI/CD pipelines, TurboIntegrator processes, and Power Automate flows — the chat embed is just a visible wrapper around it.
 
 ---
 
-## Step 1 — Generate an IBM Cloud IAM Token
+## Step 1 — Enable Anonymous Embed on Your Agent
 
-```bash
-# Log in to IBM Cloud
-ibmcloud login --sso
+Before the embed page can load the chat widget, the agent must allow anonymous (public) access.
 
-# Get your OAuth token
-ibmcloud iam oauth-tokens
-```
+1. Go to **watsonx Orchestrate** → open your **FP&A Variance Autopilot** orchestrator agent
+2. Click **Deploy** → **Embed** tab
+3. Under **Chat user identity**, leave the **Public key** field **empty**
+4. Save
 
-Copy the value after `IAM token:` — this is your Bearer token. It is valid for ~60 minutes.
-
-> **Alternative:** Generate a long-lived API key-based token:
-> ```bash
-> curl -X POST https://iam.cloud.ibm.com/identity/token \
->   -H "Content-Type: application/x-www-form-urlencoded" \
->   -d "grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey=<YOUR_API_KEY>" \
->   | jq -r '.access_token'
-> ```
+> If a public key is registered, the embed requires a signed JWT token on every request. Leave it blank for the workshop demo.
 
 ---
 
-## Step 2 — Open the Chat Page
+## Step 2 — Get Your Embed Values
 
-Open the file in your browser:
+From the same **Deploy → Embed** tab, copy:
+
+| Value | Where to find it | Example |
+|-------|-----------------|---------|
+| **Agent ID** | URL of the agent edit page — last path segment | `d7cad15e-fedc-400c-9b55-1b46d43823e8` |
+| **orchestrationID** | Embed code snippet shown on the Deploy tab | `f055679c..._97954d7b...` |
+| **hostURL** | Your Orchestrate region URL | `https://eu-de.watson-orchestrate.cloud.ibm.com` |
+
+---
+
+## Step 3 — Open the Embed Page
+
+Open the file directly in your browser:
 
 ```bash
 # macOS
-open lab-02-fpa-variance-autopilot/lab-02-6-chat-embed/saleslens-crm-erp.html
+open lab-02-fpa-variance-autopilot/lab-02-6-chat-embed/saleslens-wxo-embed.html
 
 # Windows
-start lab-02-fpa-variance-autopilot/lab-02-6-chat-embed/saleslens-crm-erp.html
-
-# Or drag the file into any browser window
+start lab-02-fpa-variance-autopilot/lab-02-6-chat-embed/saleslens-wxo-embed.html
 ```
 
-The **Configure** panel opens automatically on first load.
+The page loads with:
+- A branded header — **IBM Planning Analytics × watsonx Orchestrate**
+- A hero landing panel on the left with agent badges and suggested prompts
+- The wxo chat widget on the right
 
 ---
 
-## Step 3 — Configure the Connection
+## Step 4 — Try a Query
 
-Fill in the three fields:
+Once the chat widget loads, try one of the suggested prompts:
 
-| Field | Value |
-|-------|-------|
-| **Tenant URL** | `https://<YOUR_TENANT>.ai.ibm.com` (no trailing slash) |
-| **Bearer Token** | The IAM token from Step 1 |
-| **Agent ID** | `fpa_variance_autopilot` |
+```
+Run variance analysis for January 2024
+Analyse APAC Sales — March 2024
+Why did NA Sales miss budget in Jan 2024?
+```
 
-Click **Save & Connect**. The status dot in the top-right turns **green** when the configuration is saved.
-
-> Configuration is persisted in `localStorage` — you only need to fill this in once per browser session. Token refresh is needed every ~60 minutes.
+The orchestrator routes the query across PA, CRM, and ERP agents and returns a CFO-ready explanation.
 
 ---
 
-## Step 4 — Send a Query
+## How the Config Works
 
-Click one of the suggestion pills or type in the input box:
+The embed is configured in the `<script>` block at the bottom of [`saleslens-wxo-embed.html`](saleslens-wxo-embed.html):
 
-```
-Run the FP&A variance analysis for January 2024.
-```
-
-The interface sends the message to your Orchestrate agent and displays the response in the chat panel.
-
-**Try these prompts:**
-
-```
-Run variance analysis for January 2024 on the FPA_Variance cube.
-Analyse March 2024 APAC Sales variances.
-Show all material OpEx variances for Q1 2024.
-Explain the NA Sales revenue miss in January 2024.
-```
-
----
-
-## How the Page Works
-
-```
-[User types message]
-        │
-        ▼
-POST /v1/chat  ──→  watsonx Orchestrate
-  agent_id: fpa_variance_autopilot          │
-  messages: [{ role: user, content: ... }]  │
-        │                                   ▼
-        │              FP&A Variance Autopilot (Orchestrator)
-        │                     ├── pa_data_agent
-        │                     ├── crm_context_agent
-        │                     └── erp_context_agent
-        │                                   │
-        └───────── response.output.text ────┘
-                        │
-                        ▼
-                [Displayed in chat bubble]
+```js
+window.wxOConfiguration = {
+  orchestrationID: "<your-orchestration-id>",
+  hostURL: "https://eu-de.watson-orchestrate.cloud.ibm.com",
+  rootElementID: "root",
+  deploymentPlatform: "ibmcloud",
+  crn: "<your-crn>",
+  chatOptions: {
+    agentId: "<your-agent-id>"
+  },
+  layout: {
+    form: "float",
+    height: "900px",
+    width: "900px"
+  }
+};
 ```
 
-The page is entirely self-contained — one HTML file, no npm, no build step, no framework.
-
----
-
-## Customising the Embed
-
-The file [`saleslens-crm-erp.html`](saleslens-crm-erp.html) is a single self-contained HTML file co-located in this folder. Common customisations:
-
-**Change the agent title:**
-```html
-<h1>FP&amp;A Variance Autopilot</h1>   ← update this line in the header
-```
-
-**Add or change suggestion pills:**
-```html
-<button class="suggestion-btn">Run variance analysis for January 2024</button>
-```
-
-**Change the colour scheme:**  
-Edit the CSS variables at the top of the `<style>` block:
-```css
-background: #ffffff;   ← page background
-color: #1f2328;        ← text colour
-```
-
-**Embed in an existing page:**  
-Copy the `<style>`, `<body>` content, and `<script>` block into any HTML page. The chat occupies its parent container.
-
----
-
-## CORS Note
-
-If you see a CORS error in the browser console, the request is being blocked by the browser's same-origin policy. Options:
-
-1. **Use a server-side proxy:** Route requests through a local Express server that forwards to Orchestrate and sets the correct CORS headers. A minimal proxy:
-
-```javascript
-// proxy.js  (run with: node proxy.js)
-const express = require('express');
-const app = express();
-app.use(express.json());
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
-  next();
-});
-app.post('/v1/chat', async (req, res) => {
-  const fetch = (await import('node-fetch')).default;
-  const upstream = await fetch('https://<YOUR_TENANT>.ai.ibm.com/v1/chat', {
-    method: 'POST',
-    headers: {
-      'Authorization': req.headers.authorization,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(req.body)
-  });
-  const data = await upstream.json();
-  res.json(data);
-});
-app.use(express.static('.'));
-app.listen(3000, () => console.log('Proxy running on http://localhost:3000'));
-```
-
-Then change the tenant URL in the chat config to `http://localhost:3000`.
-
-2. **Use the IBM Orchestrate embed widget:** Some Orchestrate tenants provide a dedicated embeddable chat widget with CORS handled server-side. Ask your facilitator.
+| Property | Description |
+|----------|-------------|
+| `orchestrationID` | Identifies your Orchestrate tenant |
+| `rootElementID` | The `id` of the HTML div the widget mounts into |
+| `layout.form` | `float` renders the chat panel inline in the root element |
+| `layout.height/width` | Size of the chat panel |
 
 ---
 
 ## ✅ Checkpoint
 
-- [ ] `saleslens-crm-erp.html` opens in a browser without errors
-- [ ] Configure panel filled in with tenant URL, token, and agent ID
-- [ ] Status dot turns green after saving
+- [ ] Agent embed security has no public key (anonymous access)
+- [ ] `saleslens-wxo-embed.html` opens in browser without errors
+- [ ] Chat widget appears on the right side of the page
 - [ ] At least one variance query returns a response from the orchestrator
-- [ ] Response includes PA data + CRM/ERP root cause text
 
 ---
 
 ## Troubleshooting
 
-**Config panel keeps re-opening**  
-→ The page opens the config on first load if the tenant URL is empty. Fill in all three fields and click Save.
+**Chat widget doesn't appear / blank right panel**  
+→ Check browser console for errors. Most likely cause: the agent's embed security has a public key registered — clear it in Orchestrate Deploy → Embed.
 
-**Status dot stays grey after saving**  
-→ This is normal — the status dot turns green after a successful Save (not after a successful API call). Check the browser console for errors on the first message send.
+**"Authentication Error — This content couldn't be loaded"**  
+→ A public key is registered in Orchestrate but no `identityToken` is being passed. Remove the public key from the Embed security settings to use anonymous access.
 
-**Response shows `Error: 401`**  
-→ Your IAM token has expired (valid ~60 minutes). Re-run `ibmcloud iam oauth-tokens` and update the token in Configure.
-
-**Response shows `Error: 404`**  
-→ The agent ID is wrong. Check `orchestrate agents list` for the exact name.
-
-**Response shows raw JSON instead of formatted text**  
-→ The Orchestrate API response shape may differ by tenant version. Check the browser console for the raw response and update the extraction logic in the `<script>`:
-```javascript
-const reply = data?.output?.text || data?.choices?.[0]?.message?.content || data?.response;
-```
+**Chat appears but agent doesn't respond**  
+→ Confirm the orchestrator agent is deployed and active in Orchestrate. Check `agentId` matches the agent's ID exactly.
 
 ---
 

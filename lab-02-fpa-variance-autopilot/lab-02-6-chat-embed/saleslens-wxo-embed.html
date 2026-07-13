@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FP&A Variance Autopilot</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; width: 100%; overflow: hidden; font-family: -apple-system, "Segoe UI", system-ui, sans-serif; background: #f4f6fb; }
+
+  /* ── Layout ── */
+  #layout { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; }
+
+  /* ── Header ── */
+  header {
+    height: 56px; flex-shrink: 0;
+    display: flex; align-items: center;
+    padding: 0 28px; gap: 0;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  .pa-logo { display: flex; align-items: center; gap: 9px; padding-right: 20px; border-right: 1px solid #e5e7eb; }
+  .pa-logo svg { width: 32px; height: 32px; }
+  .logo-text { display: flex; flex-direction: column; line-height: 1.2; }
+  .logo-text .sub  { font-size: 10px; color: #6b7280; }
+  .logo-text .name { font-size: 13px; font-weight: 700; color: #111827; }
+  .sep { padding: 0 16px; font-size: 14px; color: #d1d5db; }
+  .wxo-logo { display: flex; align-items: center; gap: 9px; }
+  .wxo-logo svg { width: 26px; height: 26px; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .live { display: flex; align-items: center; gap: 5px; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 6px #22c55e88; }
+  .live-lbl { font-size: 11px; font-weight: 600; color: #16a34a; }
+  .agent-identity {
+    display: flex; align-items: center; gap: 7px;
+    padding: 3px 10px 3px 3px;
+    border-radius: 20px;
+    background: #f5f3ff;
+    border: 1px solid #ddd6fe;
+  }
+  .agent-identity span { font-size: 12px; font-weight: 700; color: #6d28d9; }
+
+  /* ── Main area ── */
+  #main {
+    flex: 1; min-height: 0;
+    display: flex;
+    position: relative;
+    background: #f4f6fb;
+  }
+
+  /* ── Landing hero — left-aligned, takes left half ── */
+  #hero {
+    width: 50%;
+    display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: center;
+    padding: 48px 40px; gap: 0;
+    background: #f4f6fb;
+    flex-shrink: 0;
+  }
+
+  .icon-cluster { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+  .icon-box {
+    width: 68px; height: 68px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid #e5e7eb;
+  }
+  .icon-box.blue   { background: #eff6ff; }
+  .icon-box.purple { background: #f5f3ff; }
+  .icon-box svg { width: 34px; height: 34px; }
+  .connector { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .connector-line { width: 40px; height: 2px; background: linear-gradient(90deg,#93c5fd,#c4b5fd); border-radius: 2px; }
+  .connector span { font-size: 9px; font-weight: 600; color: #9ca3af; letter-spacing: .07em; text-transform: uppercase; }
+
+  .hero-title { font-size: 26px; font-weight: 800; color: #111827; letter-spacing: -.4px; text-align: left; margin-bottom: 10px; }
+  .hero-title span { color: #2563eb; }
+  .hero-sub { font-size: 14px; color: #6b7280; text-align: left; max-width: 400px; line-height: 1.65; margin-bottom: 32px; }
+
+  .agent-badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-start; margin-bottom: 36px; }
+  .agent-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 8px; padding: 7px 13px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .bd-blue   { background: #3b82f6; }
+  .bd-teal   { background: #14b8a6; }
+  .bd-green  { background: #22c55e; }
+  .bd-purple { background: #8b5cf6; }
+  .agent-badge span { font-size: 12px; font-weight: 500; color: #374151; }
+
+  .prompt-hint { font-size: 11px; font-weight: 600; color: #9ca3af; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 10px; }
+  .prompt-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-start; }
+  .prompt-pill {
+    background: #fff; border: 1px solid #dbeafe;
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 12px; color: #2563eb;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    white-space: nowrap;
+  }
+
+  /* ── wxo widget container — right side, wxo float widget anchors here ── */
+  #wxo-wrap {
+    flex: 1;
+    position: relative;
+  }
+</style>
+</head>
+<body>
+<div id="layout">
+
+  <!-- Header -->
+  <header>
+    <div class="pa-logo">
+      <svg viewBox="0 0 36 36" fill="none">
+        <circle cx="6" cy="10" r="2.5" fill="#3b82f6"/>
+        <circle cx="6" cy="18" r="2.5" fill="#3b82f6"/>
+        <circle cx="6" cy="26" r="2.5" fill="#93c5fd"/>
+        <path d="M10 10 Q20 10 27 18" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+        <path d="M10 18 Q20 18 27 18" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+        <path d="M10 26 Q20 26 27 18" stroke="#93c5fd" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+        <polygon points="26,14 32,18 26,22" fill="#3b82f6"/>
+      </svg>
+      <div class="logo-text">
+        <span class="sub">IBM</span>
+        <span class="name">Planning Analytics</span>
+      </div>
+    </div>
+    <span class="sep">×</span>
+    <div class="wxo-logo">
+      <svg viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="3.5" fill="#8b5cf6"/>
+        <circle cx="4"  cy="7"  r="2" fill="#3b82f6"/>
+        <circle cx="24" cy="7"  r="2" fill="#3b82f6"/>
+        <circle cx="4"  cy="21" r="2" fill="#3b82f6"/>
+        <circle cx="24" cy="21" r="2" fill="#3b82f6"/>
+        <line x1="6" y1="8.5"  x2="11.5" y2="12" stroke="#8b5cf6" stroke-width="1.4"/>
+        <line x1="22" y1="8.5" x2="16.5" y2="12" stroke="#8b5cf6" stroke-width="1.4"/>
+        <line x1="6" y1="19.5" x2="11.5" y2="16" stroke="#8b5cf6" stroke-width="1.4"/>
+        <line x1="22" y1="19.5" x2="16.5" y2="16" stroke="#8b5cf6" stroke-width="1.4"/>
+      </svg>
+      <div class="logo-text">
+        <span class="sub">IBM</span>
+        <span class="name">watsonx Orchestrate</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="agent-identity">
+        <svg viewBox="0 0 40 40" width="24" height="24">
+          <circle cx="20" cy="20" r="20" fill="#8b5cf6"/>
+          <circle cx="20" cy="20" r="5" fill="white"/>
+          <circle cx="6" cy="11" r="3" fill="#c4b5fd"/>
+          <circle cx="34" cy="11" r="3" fill="#c4b5fd"/>
+          <circle cx="6" cy="29" r="3" fill="#c4b5fd"/>
+          <circle cx="34" cy="29" r="3" fill="#c4b5fd"/>
+          <line x1="9" y1="12.5" x2="16" y2="17" stroke="white" stroke-width="1.5"/>
+          <line x1="31" y1="12.5" x2="24" y2="17" stroke="white" stroke-width="1.5"/>
+          <line x1="9" y1="27.5" x2="16" y2="23" stroke="white" stroke-width="1.5"/>
+          <line x1="31" y1="27.5" x2="24" y2="23" stroke="white" stroke-width="1.5"/>
+        </svg>
+        <span>SalesLens AI</span>
+      </div>
+      <div class="live"><span class="live-dot"></span><span class="live-lbl">Live</span></div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <div id="main">
+
+    <!-- Hero landing (background content) -->
+    <div id="hero">
+      <div class="icon-cluster">
+        <div class="icon-box blue">
+          <svg viewBox="0 0 36 36" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round">
+            <rect x="4" y="4" width="12" height="14" rx="2"/>
+            <rect x="20" y="4" width="12" height="9" rx="2"/>
+            <rect x="20" y="17" width="12" height="15" rx="2"/>
+            <rect x="4" y="22" width="12" height="10" rx="2"/>
+          </svg>
+        </div>
+        <div class="connector">
+          <div class="connector-line"></div>
+          <span>multi-agent</span>
+          <div class="connector-line"></div>
+        </div>
+        <div class="icon-box purple">
+          <svg viewBox="0 0 36 36" fill="none" stroke="#8b5cf6" stroke-width="1.8" stroke-linecap="round">
+            <circle cx="18" cy="18" r="5"/>
+            <circle cx="6"  cy="9"  r="3"/>
+            <circle cx="30" cy="9"  r="3"/>
+            <circle cx="6"  cy="27" r="3"/>
+            <circle cx="30" cy="27" r="3"/>
+            <line x1="9"  y1="10.5" x2="14" y2="15"/>
+            <line x1="27" y1="10.5" x2="22" y2="15"/>
+            <line x1="9"  y1="25.5" x2="14" y2="21"/>
+            <line x1="27" y1="25.5" x2="22" y2="21"/>
+          </svg>
+        </div>
+      </div>
+
+      <h1 class="hero-title"><span>SalesLens</span> AI</h1>
+      <p class="hero-sub">Ask anything about your budget variances. The orchestrator routes your query across Planning Analytics, CRM pipeline data, and ERP cost context to deliver a CFO-ready answer.</p>
+
+      <div class="agent-badges">
+        <div class="agent-badge"><span class="badge-dot bd-blue"></span><span>Planning Analytics</span></div>
+        <div class="agent-badge"><span class="badge-dot bd-teal"></span><span>CRM Context</span></div>
+        <div class="agent-badge"><span class="badge-dot bd-green"></span><span>ERP Context</span></div>
+        <div class="agent-badge"><span class="badge-dot bd-purple"></span><span>Orchestrator</span></div>
+      </div>
+
+      <p class="prompt-hint">Try asking</p>
+      <div class="prompt-pills">
+        <span class="prompt-pill">Run variance analysis for January 2024</span>
+        <span class="prompt-pill">Analyse APAC Sales — March 2024</span>
+        <span class="prompt-pill">Why did NA Sales miss budget in Jan 2024?</span>
+      </div>
+    </div>
+
+    <!-- wxo widget container -->
+    <div id="wxo-wrap"><div id="root"></div></div>
+
+  </div>
+</div>
+
+<script>
+  // ── Replace the placeholder values below with your own from Orchestrate ──
+  // Deploy → Embed tab → copy orchestrationID, agentId, and CRN from the snippet
+  window.wxOConfiguration = {
+    orchestrationID: "YOUR_ORCHESTRATION_ID",
+    hostURL: "https://eu-de.watson-orchestrate.cloud.ibm.com",  // change region if needed
+    rootElementID: "root",
+    deploymentPlatform: "ibmcloud",
+    crn: "YOUR_CRN",
+    chatOptions: {
+      agentId: "YOUR_AGENT_ID"
+    },
+    layout: {
+      form: 'float',
+      height: '900px',
+      width: '900px'
+    }
+  };
+  setTimeout(function () {
+    const script = document.createElement('script');
+    script.src = `${window.wxOConfiguration.hostURL}/wxochat/wxoLoader.js?embed=true`;
+    script.addEventListener('load', function () {
+      wxoLoader.init();
+    });
+    document.head.appendChild(script);
+  }, 0);
+</script>
+</body>
+</html>
