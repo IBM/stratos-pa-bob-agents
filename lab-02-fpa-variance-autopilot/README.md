@@ -2,7 +2,9 @@
 
 **Duration:** 90 minutes
 **Tools:** watsonx Orchestrate · IBM Planning Analytics · SalesLens Mock API
+
 **Prerequisite:** [Lab 0](../lab-00-setup/README.md) ✅ and [Lab 1](../lab-01-bob-planning-analytics-mcp/README.md) ✅ completed
+
 **Reference:** [developer.watson-orchestrate.ibm.com](https://developer.watson-orchestrate.ibm.com)
 
 ---
