@@ -7,16 +7,38 @@
 
 ## Overview
 
-Before the hands-on labs begin, you need four things working:
+Before the hands-on labs begin, you need five things working:
 
 | # | Task | Step |
 |---|------|------|
+| 0 | Sign up for IBM Bob and **install the IDE** | [Step 0](#step-0--sign-up-and-install-ibm-bob-ide) |
 | 1 | Download and install the **Planning Analytics Bob mode** | [Step 1](#step-1--download-the-planning-analytics-bob-mode--skill) |
 | 2 | Install the **Planning Analytics Bob skill** | [Step 2](#step-2--install-the-planning-analytics-skill) |
 | 3 | Configure the **Planning Analytics MCP connection** in Bob | [Step 3](#step-3--configure-the-planning-analytics-mcp-connection) |
 | 4 | Validate MCP connectivity and **watsonx Orchestrate** access | [Steps 4–5](#step-4--validate-the-mcp-connection) |
 
 Raise your hand if you get stuck at any point — facilitators are available throughout this session.
+
+---
+
+## Step 0 — Sign Up and Install IBM Bob IDE
+
+> **Skip this step if you already have IBM Bob IDE installed and your account activated.**
+
+### Step 0a — Sign up and activate your account
+
+1. Go to the **[IBM Bob Sign-Up Page](https://register.bob.ibm.com)** and enter the exact corporate email address where you received this workshop invitation.
+2. Fill out your details and create a password to set up your IBMid credentials.
+3. Enter the verification code sent to your email to activate the account.
+
+### Step 0b — Download and launch the IDE
+
+1. Download the workspace client from the **[IBM Bob Download Page](https://bob.ibm.com/download)**.
+2. Install the package for your operating system (Mac / Windows / Linux).
+3. Launch the application. On first open, a browser window will appear prompting you to authenticate.
+4. Sign in with the IBMid credentials you created in Step 0a to unlock your enterprise workspace.
+
+✅ **Success:** IBM Bob IDE opens and you are logged in.
 
 ---
 
@@ -63,7 +85,7 @@ The mode configures Bob with deep TM1 expertise and activates the correct MCP to
 **Installation steps:**
 
 1. Open **IBM Bob IDE** and open the **workshop folder** (`pa-bob-orchestrate-workshop/`) as the workspace root.
-2. Create the Bob modes directory if it does not exist:
+2. Create the required Bob directories if they do not exist:
    ```bash
    mkdir -p .bob/modes
    ```
@@ -71,12 +93,16 @@ The mode configures Bob with deep TM1 expertise and activates the correct MCP to
    ```bash
    unzip /path/to/planning-analytics-mode.zip -d .bob/modes/planning-analytics
    ```
-   After extraction you should see:
+4. Move `custom_modes.yaml` up to the `.bob/` directory — **this is required for Bob to detect the mode**:
+   ```bash
+   mv .bob/modes/planning-analytics/custom_modes.yaml .bob/custom_modes.yaml
+   ```
+   After this step you should see:
    ```
    .bob/
+   ├── custom_modes.yaml
    └── modes/
        └── planning-analytics/
-           ├── custom_modes.yaml
            └── rules-planning-analytics/
                ├── 1_overview.xml
                ├── 2_mcp_tools_reference.xml
@@ -85,7 +111,8 @@ The mode configures Bob with deep TM1 expertise and activates the correct MCP to
                ├── 5_response_patterns.xml
                └── 6_troubleshooting.xml
    ```
-4. Restart Bob: press `Cmd+Shift+P` (Mac) / `Ctrl+Shift+P` (Windows) → **`Bob: Restart`**.
+5. Restart Bob: press `Cmd+Shift+P` (Mac) / `Ctrl+Shift+P` (Windows) → **`Bob: Restart`**.
+   If the command is not available, close and reopen IBM Bob IDE — this has the same effect.
 
 ---
 
@@ -130,7 +157,7 @@ The Bob skill extends the Planning Analytics mode with business-friendly query p
            ├── README.md
            └── USAGE-GUIDE.md
    ```
-3. Restart Bob to load the skill: `Cmd+Shift+P` → **`Bob: Restart`**.
+3. Restart Bob to load the skill: `Cmd+Shift+P` → **`Bob: Restart`**. If the command is not available, close and reopen IBM Bob IDE — this has the same effect.
 
 **Verify the skill is loaded:**
 
@@ -255,8 +282,10 @@ Replace the contents of `mcp.json` with the configuration below.
 ### Step 3d — Save and Reload
 
 1. Save the file (`Cmd+S` / `Ctrl+S`).
-2. Restart the MCP servers: press `Cmd+Shift+P` → **`Bob: Restart MCP Servers`**.
+2. Restart Bob: press `Cmd+Shift+P` (Mac) / `Ctrl+Shift+P` (Windows) → **`Bob: Restart`**.
 3. Wait **10–15 seconds** for the connection to establish.
+
+> **Note:** The `Bob: Restart MCP Servers` command has been removed. `Bob: Restart` now restarts Bob and reloads all MCP server connections together.
 
 ---
 
@@ -325,7 +354,7 @@ Before moving to Lab 1, confirm **all** items are checked:
 | `Connection refused` | Wrong host or port in URL | Confirm URL with facilitator |
 | `401 Unauthorized` | Incorrect or malformed credentials | Re-check Base64 encoding; ensure format is `APIKey:your-key` before encoding |
 | `Timeout` | TechZone environment not provisioned | Ask facilitator to verify TechZone instance is running |
-| Servers show as disconnected in Bob | `mcp.json` not saved or servers not restarted | Save file then run `Bob: Restart MCP Servers` |
+| Servers show as disconnected in Bob | `mcp.json` not saved or servers not restarted | Save file then run `Bob: Restart` |
 
 ### watsonx Orchestrate login fails
 
@@ -341,6 +370,7 @@ Confirm the tenant URL and your IBM ID with the facilitator. Trial access must b
 | **PA Bob Skill** | `optimize/budget-and-forecasting/bob-skills/planning-analytics-skill.zip` | [Browse on GitHub →](https://github.com/ibm-self-serve-assets/building-blocks/tree/main/optimize/budget-and-forecasting/bob-skills) |
 | **MCP Config template** | `optimize/budget-and-forecasting/assets/mcp.json` | [Browse on GitHub →](https://github.com/ibm-self-serve-assets/building-blocks/tree/main/optimize/budget-and-forecasting/assets) |
 | **FPA Sample Data** | `optimize/budget-and-forecasting/assets/FPA_Variance_Analysis/` | [Browse on GitHub →](https://github.com/ibm-self-serve-assets/building-blocks/tree/main/optimize/budget-and-forecasting/assets/FPA_Variance_Analysis) |
+| **PA MCP Tools Reference** | IBM Documentation | [Planning Analytics MCP Tools →](https://www.ibm.com/docs/en/planning-analytics/2.1.0?topic=agent-mcp-tools) |
 
 ---
 
