@@ -69,6 +69,23 @@ Bob's response is your starting point for a real PoC. Save it.
 
 ---
 
+## Bonus — Go Further with the watsonx Orchestrate ADK *(Optional)*
+
+If you want to move beyond the UI and define agents, tools, and deployments entirely from code, the **Agent Development Kit (ADK)** is the developer path.
+
+| What you can do with the ADK | Example |
+|-----------------------------|---------|
+| Import MCP servers as toolsets via CLI | `orchestrate tools import --kind mcp ...` |
+| Deploy agents from YAML in CI/CD | `orchestrate agents import --file agent.yaml` |
+| Chat with agents from the terminal | `orchestrate agents chat --agent fpa_variance_autopilot` |
+| Call agents via REST API from any app | `POST /v1/chat` with your agent ID |
+
+**→ Work through [Exercise 6 in Lab 2](../lab-02-fpa-variance-autopilot/README.md#exercise-6--connect-via-watsonx-orchestrate-adk-optional--bonus)** — it's already built and waiting for you.
+
+**→ IBM Developer learning path:** [Get started with watsonx Orchestrate — Develop agents with ADK](https://developer.ibm.com/learningpaths/get-started-watsonx-orchestrate/develop-agents-adk/)
+
+---
+
 ## Resources — Take These Away
 
 | Resource | Link |
@@ -78,6 +95,7 @@ Bob's response is your starting point for a real PoC. Save it.
 | Planning Analytics Building Blocks | [github.com/ibm-self-serve-assets/building-blocks](https://github.com/ibm-self-serve-assets/building-blocks/tree/main/optimize/budget-and-forecasting) |
 | Workshop Repository | Fork this repo and use it as your PoC starting point |
 | Agent YAMLs to adapt | `lab-02-3-pa-agent/`, `lab-02-4-crm-erp-agents/`, `lab-02-5-orchestrator/` |
+| **ADK Learning Path** | [developer.ibm.com — Develop agents with ADK](https://developer.ibm.com/learningpaths/get-started-watsonx-orchestrate/develop-agents-adk/) |
 
 ---
 

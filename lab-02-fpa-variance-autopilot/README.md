@@ -36,6 +36,7 @@ This lab is organised as a series of focused sub-labs. Each sub-lab has a single
 | [2.4](lab-02-4-crm-erp-agents/README.md) | Create CRM + ERP Sub-Agents | `CRM Context Agent` + `ERP Context Agent` live | 20 min |
 | [2.5](lab-02-5-orchestrator/README.md) | Create the Orchestrator Agent | `FP&A Variance Autopilot` running end-to-end | 25 min |
 | [2.6](lab-02-6-chat-embed/README.md) *(optional)* | Embed in Branded Chat Page | `saleslens-wxo-embed.html` — wxoLoader embed widget | 10 min |
+| **Exercise 6** *(optional / bonus)* | Connect via watsonx Orchestrate ADK | Agent deployed and chatting via CLI & REST | 20 min |
 
 **→ [Start with Lab 2.1](lab-02-1-add-mcp-server/README.md)**
 
@@ -561,7 +562,10 @@ Re-run the evaluation and compare the faithfulness score.
 
 ---
 
-## Exercise 6 — Connect via watsonx Orchestrate ADK
+## Exercise 6 — Connect via watsonx Orchestrate ADK *(Optional / Bonus)*
+
+> **⏭️ This exercise is optional.** Core lab objectives are complete after Exercise 5. Come back to this if time permits, or work through it after the session.
+> **Reference:** [Get started with watsonx Orchestrate ADK — IBM Developer](https://developer.ibm.com/learningpaths/get-started-watsonx-orchestrate/develop-agents-adk/)
 
 **Goal:** Use the **watsonx Orchestrate ADK** (Agent Development Kit) to programmatically define tools, connect the SalesLens API, and register the agent — all from code rather than the UI.
 
