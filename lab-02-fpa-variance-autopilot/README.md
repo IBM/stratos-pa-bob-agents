@@ -36,7 +36,7 @@ This lab is organised as a series of focused sub-labs. Each sub-lab has a single
 | [2.4](lab-02-4-crm-erp-agents/README.md) | Create CRM + ERP Sub-Agents | `CRM Context Agent` + `ERP Context Agent` live | 20 min |
 | [2.5](lab-02-5-orchestrator/README.md) | Create the Orchestrator Agent | `FP&A Variance Autopilot` running end-to-end | 25 min |
 | [2.6](lab-02-6-chat-embed/README.md) *(optional)* | Embed in Branded Chat Page | `saleslens-wxo-embed.html` — wxoLoader embed widget | 10 min |
-| [Exercise 7](exercise-07-adk/README.md) *(optional / bonus)* | Get Started with watsonx Orchestrate ADK | First agent deployed via ADK CLI | 30 min |
+| [lab-02-7-adk](lab-02-7-adk/README.md) *(standalone bonus — not part of core lab)* | Get Started with watsonx Orchestrate ADK | First agent deployed via ADK CLI | 30 min |
 
 **→ [Start with Lab 2.1](lab-02-1-add-mcp-server/README.md)**
 

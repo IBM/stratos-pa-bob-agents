@@ -1,10 +1,10 @@
-# Exercise 7 — Get Started with watsonx Orchestrate ADK *(Optional / Bonus)*
+# lab-02-7-adk — Get Started with watsonx Orchestrate ADK
 
-**Prerequisite:** [Lab 2](../README.md) ✅ completed (or at minimum Exercise 1–5)  
-**Duration:** ~30 minutes  
+> **⚠️ Standalone bonus — not part of the core lab.**
+> Do not run this as part of the main Lab 2 flow. Work through this independently after the session, or if you have extra time after completing all core exercises.
+
+**Duration:** ~30 minutes
 **Reference:** [Get started with watsonx Orchestrate ADK — IBM Developer](https://developer.ibm.com/learningpaths/get-started-watsonx-orchestrate/develop-agents-adk/)
-
-> **⏭️ This exercise is optional.** Core lab objectives are complete after Exercise 5. Come back to this if time permits, or work through it after the session.
 
 ---
 
@@ -188,4 +188,4 @@ Now that your environment is set up and your first agent is running, here are wa
 
 ---
 
-[← Back to Lab 2](../README.md)
+[← Back to Lab 2 README](../README.md)
