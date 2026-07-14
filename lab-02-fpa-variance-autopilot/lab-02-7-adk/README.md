@@ -174,6 +174,32 @@ Hello_World_Agent    A simple Hello World agent    active
 
 ---
 
+## Try It with Bob — Generate a PA Agent YAML
+
+Now that you know the YAML schema, ask Bob to generate one for you. Paste this prompt into the Bob chat panel:
+
+```
+I've just learned the watsonx Orchestrate ADK agent YAML schema.
+Generate a ready-to-import agent YAML for a Planning Analytics use case with these properties:
+
+- Name: PA_Variance_Agent
+- Purpose: Query the FPA_Variance TM1 cube for budget vs actual variances and return a plain-language summary
+- LLM: watsonx/meta-llama/llama-3-2-90b-vision-instruct
+- Style: default
+- No collaborators or tools yet (I'll add MCP tools after import)
+
+Follow the spec_version: v1 / kind: native schema.
+Include clear instructions that tell the agent to focus on material variances (>10% or >$50K).
+```
+
+Bob will return a complete, valid YAML you can save as `pa-variance-agent.yaml` and import directly with:
+
+```bash
+orchestrate agents import -f pa-variance-agent.yaml
+```
+
+---
+
 ## Next Steps with ADK
 
 Now that your environment is set up and your first agent is running, here are ways to go further:

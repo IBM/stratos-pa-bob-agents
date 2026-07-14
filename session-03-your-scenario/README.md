@@ -69,6 +69,37 @@ Bob's response is your starting point for a real PoC. Save it.
 
 ---
 
+## Bob Prompt — Generate Your Agent YAML *(Optional)*
+
+Take your three canvas answers and ask Bob to produce a ready-to-import ADK agent YAML for your scenario. Paste this into the Bob chat panel, filling in your answers from the canvas above:
+
+```
+Generate a ready-to-import watsonx Orchestrate ADK agent YAML for my scenario:
+
+- Planning object: [your answer to Q1]
+- Variance story:  [your answer to Q2]
+- Root cause system: [your answer to Q3]
+
+Requirements:
+- spec_version: v1, kind: native
+- Give the agent a clear name (snake_case) and a one-line description
+- Write instructions that tell the agent to detect material variances, investigate root cause from the external system, and return a CFO-ready plain-language summary
+- LLM: watsonx/meta-llama/llama-3-2-90b-vision-instruct
+- style: default, no collaborators or tools yet
+
+Return only the YAML — no explanation needed.
+```
+
+Save the YAML Bob returns. It is ready to import with:
+
+```bash
+orchestrate agents import -f your-scenario-agent.yaml
+```
+
+> **What this shows:** Bob understands the ADK agent schema and can generate deployment-ready YAML from a plain-language description — bridging your business scenario directly to code.
+
+---
+
 ## Bonus — Go Further with the watsonx Orchestrate ADK *(Optional)*
 
 If you want to move beyond the UI and define agents, tools, and deployments entirely from code, the **Agent Development Kit (ADK)** is the developer path.
