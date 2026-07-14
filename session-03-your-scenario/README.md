@@ -80,7 +80,7 @@ If you want to move beyond the UI and define agents, tools, and deployments enti
 | Chat with agents from the terminal | `orchestrate agents chat --agent fpa_variance_autopilot` |
 | Call agents via REST API from any app | `POST /v1/chat` with your agent ID |
 
-**→ Work through [Exercise 6 in Lab 2](../lab-02-fpa-variance-autopilot/README.md#exercise-6--connect-via-watsonx-orchestrate-adk-optional--bonus)** — it's already built and waiting for you.
+**→ Work through [Exercise 7 in Lab 2](../lab-02-fpa-variance-autopilot/README.md#exercise-7--get-started-with-watsonx-orchestrate-adk-optional--bonus)** — it's already built and waiting for you.
 
 **→ IBM Developer learning path:** [Get started with watsonx Orchestrate — Develop agents with ADK](https://developer.ibm.com/learningpaths/get-started-watsonx-orchestrate/develop-agents-adk/)
 

@@ -36,7 +36,7 @@ This lab is organised as a series of focused sub-labs. Each sub-lab has a single
 | [2.4](lab-02-4-crm-erp-agents/README.md) | Create CRM + ERP Sub-Agents | `CRM Context Agent` + `ERP Context Agent` live | 20 min |
 | [2.5](lab-02-5-orchestrator/README.md) | Create the Orchestrator Agent | `FP&A Variance Autopilot` running end-to-end | 25 min |
 | [2.6](lab-02-6-chat-embed/README.md) *(optional)* | Embed in Branded Chat Page | `saleslens-wxo-embed.html` — wxoLoader embed widget | 10 min |
-| **Exercise 6** *(optional / bonus)* | Connect via watsonx Orchestrate ADK | Agent deployed and chatting via CLI & REST | 20 min |
+| **Exercise 7** *(optional / bonus)* | Get Started with watsonx Orchestrate ADK | First agent deployed via ADK CLI | 30 min |
 
 **→ [Start with Lab 2.1](lab-02-1-add-mcp-server/README.md)**
 
@@ -562,112 +562,144 @@ Re-run the evaluation and compare the faithfulness score.
 
 ---
 
-## Exercise 6 — Connect via watsonx Orchestrate ADK *(Optional / Bonus)*
+## Exercise 7 — Get Started with watsonx Orchestrate ADK *(Optional / Bonus)*
 
 > **⏭️ This exercise is optional.** Core lab objectives are complete after Exercise 5. Come back to this if time permits, or work through it after the session.
 > **Reference:** [Get started with watsonx Orchestrate ADK — IBM Developer](https://developer.ibm.com/learningpaths/get-started-watsonx-orchestrate/develop-agents-adk/)
 
-**Goal:** Use the **watsonx Orchestrate ADK** (Agent Development Kit) to programmatically define tools, connect the SalesLens API, and register the agent — all from code rather than the UI.
+**Goal:** Install the watsonx Orchestrate **Agent Development Kit (ADK)**, connect it to your SaaS instance, and deploy your first agent entirely from the CLI — no UI required.
+
+**Prerequisites:**
+- Basic familiarity with terminal / bash commands
+- Python 3.11–3.13 installed
+- Access to a watsonx Orchestrate instance (workshop tenant or [30-day free trial](https://www.ibm.com/products/watsonx-orchestrate))
 
 ### Background: Why ADK?
 
-The ADK is the developer path for:
-- Embedding agent creation in CI/CD pipelines
-- Registering custom tools that aren't exposed via OpenAPI
-- Building multi-agent systems programmatically
-- Testing agents locally before deploying to Orchestrate
+The ADK gives developers full control to:
+- Define agents in YAML or JSON files — version-controlled and repeatable
+- Create custom Python tools not exposed via OpenAPI
+- Manage the full agent lifecycle (import, list, delete) with a few CLI commands
+- Embed agent deployment in CI/CD pipelines
 
 ---
 
-### Step 6.1 — Install the ADK
+### Step 7.1 — Check Python Version
+
+The ADK requires **Python 3.11–3.13**. Check your version:
+
+```bash
+python --version
+```
+
+If your version is outside the 3.11–3.13 range, install a compatible version from [python.org](https://www.python.org/downloads/) or use `pyenv` on macOS/Linux.
+
+Also confirm `pip` is available:
+
+```bash
+pip --version
+```
+
+---
+
+### Step 7.2 — Create a Virtual Environment
+
+Create and activate a Python virtual environment to keep ADK dependencies isolated:
+
+```bash
+python -m venv venv
+```
+
+Activate it:
+
+- **macOS / Linux:**
+  ```bash
+  source venv/bin/activate
+  ```
+- **Windows:**
+  ```bash
+  venv\Scripts\activate
+  ```
+
+You should see `(venv)` prefixed in your terminal prompt.
+
+---
+
+### Step 7.3 — Install the ADK
+
+With the virtual environment active:
 
 ```bash
 pip install ibm-watsonx-orchestrate
 ```
 
-Verify:
+Verify the installation:
 
 ```bash
-orchestrate --version
+orchestrate --help
+```
+
+You should see a list of available ADK CLI commands.
+
+---
+
+### Step 7.4 — Connect to Your watsonx Orchestrate Instance
+
+You need your instance's **Service Instance URL** and an **API Key**.
+
+**Get your credentials:**
+
+1. Sign in to your watsonx Orchestrate instance.
+2. Click the **Profile icon** (top-right) → **Settings**.
+3. Go to the **API details** tab.
+4. Copy the **Service instance URL**.
+5. Click **Generate API key** — copy it immediately and save it (you won't see it again).
+
+**Register and activate the environment:**
+
+```bash
+orchestrate env add -n workshop \
+  -u <SERVICE_INSTANCE_URL> \
+  --type mcsp \
+  --activate
+```
+
+Replace `<SERVICE_INSTANCE_URL>` with the URL you copied. When prompted, paste your API Key and press Enter.
+
+A confirmation message will appear showing the environment is created and activated.
+
+---
+
+### Step 7.5 — Define Your First Agent (Hello World)
+
+Create a file named `hello-world-agent.yaml` with the following content:
+
+```yaml
+spec_version: v1
+kind: native
+name: Hello_World_Agent
+description: A simple Hello World agent
+instructions: >
+  You are a test agent created for the watsonx Orchestrate ADK tutorial.
+  When the user asks "who are you", respond with: I'm the Hello World Agent.
+  Congratulations on completing the Getting Started with watsonx Orchestrate ADK tutorial!
+llm: watsonx/meta-llama/llama-3-2-90b-vision-instruct
+style: default
+collaborators: []
+tools: []
 ```
 
 ---
 
-### Step 6.2 — Authenticate
+### Step 7.6 — Import and Verify the Agent
+
+Navigate to the directory containing your YAML file and import it:
 
 ```bash
-orchestrate env add --env-name workshop \
-  --url https://<YOUR_ORCHESTRATE_TENANT>.ai.ibm.com \
-  --api-key <YOUR_API_KEY>
-
-orchestrate env activate workshop
+orchestrate agents import -f hello-world-agent.yaml
 ```
 
----
-
-### Step 6.3 — Import the SalesLens API as a Toolset
-
-The ADK can import any OpenAPI spec directly as a named toolset:
-
-```bash
-orchestrate tools import \
-  --kind openapi \
-  --spec https://<YOUR_APP_URL>/api-spec \
-  --name saleslens-fpa-api \
-  --app-id saleslens
-```
-
-Set the API key credential:
-
-```bash
-orchestrate credentials add \
-  --app-id saleslens \
-  --header X-Api-Key \
-  --value workshop-demo-key
-```
-
-Verify tools were imported:
-
-```bash
-orchestrate tools list | grep saleslens
-```
-
-**Expected output:**
-```
-saleslens/getCrmVarianceContext
-saleslens/getCrmDeals
-saleslens/getCrmPipelineSummary
-saleslens/getErpCostContext
-saleslens/getErpPurchaseOrders
-saleslens/getErpHeadcountEvents
-```
-
----
-
-### Step 6.4 — Import the MCP Server via ADK
-
-```bash
-orchestrate tools import \
-  --kind mcp \
-  --url http://<TECHZONE_HOST>:<PORT>/api/<TENANT_ID>/v0/agentic-ai/cube/mcp \
-  --name planning-analytics-mcp \
-  --auth-type basic \
-  --username <USER> \
-  --password <PASSWORD>
-```
-
----
-
-### Step 6.5 — Deploy the Agent from YAML
-
-The `fpa-variance-agent.yaml` in this repo is already ADK-compatible. Deploy it directly:
-
-```bash
-orchestrate agents import \
-  --file lab-02-fpa-variance-autopilot/assets/fpa-variance-agent.yaml   # monolithic reference
-```
-
-Verify:
+Confirm it was imported:
 
 ```bash
 orchestrate agents list
@@ -675,44 +707,38 @@ orchestrate agents list
 
 **Expected:**
 ```
-fpa_variance_autopilot    FP&A Variance Autopilot    active
+Hello_World_Agent    A simple Hello World agent    active
 ```
 
 ---
 
-### Step 6.6 — Chat with the Agent via CLI
+### Step 7.7 — Test the Agent in the Orchestrate UI
 
-```bash
-orchestrate agents chat --agent fpa_variance_autopilot
-```
+1. Go to your watsonx Orchestrate SaaS instance.
+2. Open the navigation menu (top-left) → **Build** → **Agent Builder**.
+3. Click **Hello_World_Agent** to open it.
+4. In the test chat on the right, type:
+   ```
+   Who are you?
+   ```
+5. The agent should respond:
+   > *I'm the Hello World Agent. Congratulations on completing the Getting Started with watsonx Orchestrate ADK tutorial!*
 
-```
-You: Run the variance analysis for January 2024 on FPA_Variance cube.
-
-Agent: 📊 FP&A Variance Analysis — January 2024 ...
-```
+✅ **Success:** Your first ADK-deployed agent is live.
 
 ---
 
-### Step 6.7 — Call the Agent via REST API
+### Next Steps with ADK
 
-Every Orchestrate agent exposes a REST endpoint. Use this in your own applications:
+Now that your environment is set up and your first agent is running, here are ways to go further:
 
-```bash
-curl -X POST \
-  https://<YOUR_ORCHESTRATE_TENANT>.ai.ibm.com/v1/chat \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_id": "fpa_variance_autopilot",
-    "messages": [{
-      "role": "user",
-      "content": "Run variance analysis for January 2024 on FPA_Variance cube"
-    }]
-  }'
-```
-
-> **Production pattern:** This is how you would trigger the autopilot from a Planning Analytics TurboIntegrator process, a scheduler, or a Power Automate flow — the moment actuals land in TM1, call this endpoint.
+| What to explore | How |
+|----------------|-----|
+| See all ADK commands | `orchestrate --help` |
+| Import the FP&A agent from this workshop | `orchestrate agents import -f lab-02-fpa-variance-autopilot/assets/fpa-variance-agent.yaml` |
+| Add tools to an agent | Define tools in YAML and use `orchestrate tools import` |
+| Read the full ADK docs | [IBM Developer — ADK Tutorial](https://developer.ibm.com/learningpaths/get-started-watsonx-orchestrate/develop-agents-adk/) |
+| Join the community | [watsonx Orchestrate Community](https://community.ibm.com/community/user/watsonxai/communities/community-home?CommunityKey=1b4d3e0f-d8d1-4f47-be87-d803e15e8b0e) |
 
 ---
 
