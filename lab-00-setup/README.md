@@ -230,7 +230,7 @@ Replace the contents of `mcp.json` with the configuration below.
         "Accept": "text/event-stream",
         "Cache-Control": "no-cache"
       },
-      "timeout": 30000,
+      "timeout": 300,
       "disabled": false,
       "alwaysAllow": [
         "update_tm1_process",
@@ -251,7 +251,7 @@ Replace the contents of `mcp.json` with the configuration below.
         "Accept": "text/event-stream",
         "Cache-Control": "no-cache"
       },
-      "timeout": 30000,
+      "timeout": 300,
       "disabled": false,
       "alwaysAllow": [
         "get_data_from_data_explorer",
