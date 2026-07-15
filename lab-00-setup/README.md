@@ -41,7 +41,7 @@ Raise your hand if you get stuck at any point — facilitators are available thr
 ✅ **Success:** IBM Bob IDE opens and you are logged in.
 
 ---
-
+## Skill & Modes are Optional
 ## Step 1 — Download the Planning Analytics Bob Mode & Skill
 
 The Planning Analytics **mode** and **skill** are published in the IBM Building Blocks repository on GitHub. Download both assets from the link below before continuing.
